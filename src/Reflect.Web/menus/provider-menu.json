@@ -1,0 +1,9 @@
+[
+    { "isCategory": true, "label": "Overview" },
+    { "label": "Dashboard", "url": "/Provider/Dashboard/Index", "icon": "ri-dashboard-line" },
+    { "label": "Patients", "url": "/Provider/Patients/Index", "icon": "ri-group-line" },
+    { "isCategory": true, "label": "Remote monitoring" },
+    { "label": "RTM billing", "url": "/Provider/Billing/Index", "icon": "ri-file-list-3-line" },
+    { "label": "My monitoring time", "url": "/Provider/Monitoring/Index", "icon": "ri-timer-line" },
+    { "label": "Communications", "url": "/Provider/Communications/Index", "icon": "ri-chat-3-line" }
+]

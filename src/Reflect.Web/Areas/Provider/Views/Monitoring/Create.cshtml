@@ -1,0 +1,86 @@
+@model Reflect.Web.Models.ViewModels.Provider.Monitoring.MonitoringCreateViewModel
+@using System.Globalization
+@{
+    ViewData["Title"] = "Add monitoring time";
+    if (Model.ReturnToPatient)
+    {
+        ViewData["BreadcrumbParent"] = Model.LockedPatientName;
+        ViewData["BreadcrumbParentUrl"] = Url.Action("Details", "Patients", new { id = Model.PatientId, tab = "monitoring" });
+    }
+    else
+    {
+        ViewData["BreadcrumbParent"] = "My monitoring time";
+        ViewData["BreadcrumbParentUrl"] = Url.Action("Index");
+    }
+    var cancelUrl = Model.ReturnToPatient ? Url.Action("Details", "Patients", new { id = Model.PatientId, tab = "monitoring" }) : Url.Action("Index");
+}
+@section Styles {
+    <partial name="_FormStyles" />
+}
+
+<div class="rpd-page-header">
+    <div>
+        <h1 class="page-title mb-1">Add monitoring time</h1>
+        <p class="text-muted fs-13 mb-0">For review work done outside the dashboard, such as reading exported reports. Time spent with a patient's record open here is tracked automatically, so don't add it twice.</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xxl-7 col-xl-9">
+        <form method="post" class="js-loading-submit" novalidate>
+            <input type="hidden" asp-for="ReturnToPatient" />
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+            <div class="card custom-card">
+                <div class="card-header"><div class="card-title">Time entry</div></div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label asp-for="PatientId" class="form-label"></label>
+                            @if (Model.ReturnToPatient)
+                            {
+                                <input type="hidden" asp-for="PatientId" />
+                                <input type="text" class="form-control" value="@Model.LockedPatientName" readonly aria-readonly="true" id="PatientIdDisplay" />
+                            }
+                            else
+                            {
+                                <select asp-for="PatientId" class="form-select">
+                                    <option value="">Choose a patient</option>
+                                    @foreach (var p in Model.Patients)
+                                    {
+                                        <option value="@p.Id">@p.Label</option>
+                                    }
+                                </select>
+                                <div class="text-muted fs-12 mt-1">Only patients with RTM consent are listed.</div>
+                            }
+                            <span asp-validation-for="PatientId" class="text-danger fs-12"></span>
+                        </div>
+                        <div class="col-sm-6">
+                            <label asp-for="Date" class="form-label"></label>
+                            <input asp-for="Date" class="form-control js-date" type="text" value="@Model.Date?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)" data-min-date="@Model.MinDate" data-max-date="@Model.MaxDate" />
+                            <span asp-validation-for="Date" class="text-danger fs-12"></span>
+                        </div>
+                        <div class="col-sm-6">
+                            <label asp-for="Minutes" class="form-label"></label>
+                            <input asp-for="Minutes" class="form-control" type="number" min="1" max="120" />
+                            <span asp-validation-for="Minutes" class="text-danger fs-12"></span>
+                        </div>
+                        <div class="col-12">
+                            <label asp-for="Note" class="form-label"></label>
+                            <textarea asp-for="Note" class="form-control" rows="3" placeholder="For example: reviewed two weeks of session history and PHQ-9 trend before the treatment-plan update."></textarea>
+                            <span asp-validation-for="Note" class="text-danger fs-12"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer d-flex flex-wrap gap-2 justify-content-end page-actions">
+                    <a class="btn btn-outline-secondary" href="@cancelUrl">Cancel</a>
+                    <button type="button" class="btn btn-primary js-confirm-submit" data-confirm-style="success" data-confirm-title="Add this time?" data-confirm-text="Monitoring entries can't be edited after they're saved." data-confirm-label="Add time"><i class="ri-save-line me-1" aria-hidden="true"></i>Add time</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_FormScripts" />
+    <script nonce="@Context.GetCspNonce()">ProviderFormController.init();</script>
+}

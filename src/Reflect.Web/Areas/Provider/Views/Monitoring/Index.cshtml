@@ -1,0 +1,140 @@
+@model Reflect.Web.Models.ViewModels.Provider.Monitoring.MonitoringIndexViewModel
+@{
+    ViewData["Title"] = "My monitoring time";
+}
+@section Styles {
+    <partial name="_ProviderStyles" />
+}
+
+<div class="rpd-page-header">
+    <div>
+        <h1 class="page-title mb-1">My monitoring time</h1>
+        <p class="text-muted fs-13 mb-0">Your own record of time spent reviewing patients' Reflect data in @Model.Period.Label. Use it to reconcile against what's billed.</p>
+    </div>
+    <div class="page-actions">
+        <form method="get" class="d-flex align-items-center gap-2">
+            <label for="period" class="visually-hidden">Billing period</label>
+            <select id="period" name="period" class="form-select js-auto-submit-select">
+                @foreach (var o in Model.PeriodOptions)
+                {
+                    <option value="@o.Key" selected="@o.Selected">@o.Label</option>
+                }
+            </select>
+        </form>
+        <a class="btn btn-outline-secondary" href="@Url.Action("Export", new { period = Model.Period.Key })"><i class="ri-download-2-line me-1" aria-hidden="true"></i>Export CSV</a>
+        <a class="btn btn-primary" href="@Url.Action("Create")"><i class="ri-add-line me-1" aria-hidden="true"></i>Add time</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card custom-card rpd-kpi"><div class="card-body">
+            <span class="rpd-kpi-icon bg-primary-transparent"><i class="ri-timer-line" aria-hidden="true"></i></span>
+            <div><div class="rpd-kpi-label">Total monitoring time</div><div class="rpd-kpi-value">@StatusDisplay.FormatMinutes(Model.TotalSeconds / 60)</div><div class="rpd-kpi-foot">@Model.EntryCount entries</div></div>
+        </div></div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card custom-card rpd-kpi"><div class="card-body">
+            <span class="rpd-kpi-icon bg-success-transparent"><i class="ri-timer-flash-line" aria-hidden="true"></i></span>
+            <div><div class="rpd-kpi-label">Auto-tracked</div><div class="rpd-kpi-value">@(Model.AutoSeconds / 60)<small>min</small></div><div class="rpd-kpi-foot">Recorded while a patient record was open</div></div>
+        </div></div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card custom-card rpd-kpi"><div class="card-body">
+            <span class="rpd-kpi-icon bg-warning-transparent"><i class="ri-edit-2-line" aria-hidden="true"></i></span>
+            <div><div class="rpd-kpi-label">Manual entries</div><div class="rpd-kpi-value">@(Model.ManualSeconds / 60)<small>min</small></div><div class="rpd-kpi-foot">Each with a note on what was reviewed</div></div>
+        </div></div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card custom-card rpd-kpi"><div class="card-body">
+            <span class="rpd-kpi-icon bg-info-transparent"><i class="ri-group-line" aria-hidden="true"></i></span>
+            <div><div class="rpd-kpi-label">Patients reviewed</div><div class="rpd-kpi-value">@Model.PatientsReviewed</div><div class="rpd-kpi-foot">At least one entry this period</div></div>
+        </div></div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xl-7">
+        <div class="card custom-card">
+            <div class="card-header">
+                <div>
+                    <div class="card-title">Minutes per day</div>
+                    <div class="text-muted fs-12">All patients combined</div>
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-secondary rpd-table-toggle" id="dailyTableBtn" aria-pressed="false"><i class="ri-table-line me-1" aria-hidden="true"></i><span class="js-toggle-label">Table</span></button>
+            </div>
+            <div class="card-body">
+                <div class="rpd-chart" id="dailyChartWrap"><canvas id="dailyChart" role="img" aria-label="Monitoring minutes per day. Use the Table button for values."></canvas></div>
+                <div class="rpd-chart-table" id="dailyTable"></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-5">
+        <div class="card custom-card">
+            <div class="card-header"><div class="card-title">By patient</div></div>
+            <div class="card-body">
+                @if (Model.PatientTotals.Count == 0)
+                {
+                    <div class="rpd-empty"><i class="ri-timer-line" aria-hidden="true"></i>No monitoring time in this period.</div>
+                }
+                else
+                {
+                    <ul class="rpd-feed">
+                        @foreach (var t in Model.PatientTotals)
+                        {
+                            <li>
+                                <span class="avatar avatar-sm avatar-rounded rpd-avatar">@t.Initials</span>
+                                <div class="flex-grow-1 min-w-0">
+                                    <div class="d-flex justify-content-between gap-2">
+                                        <a class="rpd-patient-link" href="@Url.Action("Details", "Patients", new { id = t.PatientId, tab = "monitoring" })">@t.PatientName</a>
+                                        <span class="fw-semibold">@t.Minutes min</span>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2 mt-1">
+                                        <div class="rpd-mini-meter flex-grow-1" aria-hidden="true"><span class="@(t.Minutes >= 20 ? "is-done" : string.Empty)" style="width: @(Math.Min(100, t.Minutes * 100 / 40))%"></span></div>
+                                        <span class="text-muted fs-12 text-nowrap">@t.Entries entries · last @t.LastReviewed</span>
+                                    </div>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card custom-card">
+    <div class="card-header">
+        <div>
+            <div class="card-title">All entries</div>
+            <div class="text-muted fs-12">Entries can't be edited or deleted, so this log can be used to support billing.</div>
+        </div>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered align-middle dt-client w-100" data-page-length="15" data-order='[[0, "desc"]]'>
+                <thead><tr><th scope="col">Started</th><th scope="col">Patient</th><th scope="col">Active time</th><th scope="col">Source</th><th scope="col">Note</th></tr></thead>
+                <tbody>
+                    @foreach (var e in Model.Entries)
+                    {
+                        <tr>
+                            <td class="text-nowrap" data-order="@e.SortKey">@e.When</td>
+                            <td class="text-nowrap"><a class="rpd-patient-link" href="@Url.Action("Details", "Patients", new { id = e.PatientId, tab = "monitoring" })">@e.PatientName</a></td>
+                            <td class="text-nowrap" data-order="@e.Seconds">@e.Duration</td>
+                            <td class="text-nowrap"><partial name="_StatusBadge" model="e.Source" /></td>
+                            <td class="rpd-wrap fs-13">@(string.IsNullOrEmpty(e.Note) ? "-" : e.Note)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ChartScripts" />
+    <script src="~/js/controllers/provider/monitoringIndexController.js" asp-append-version="true"></script>
+    <script nonce="@Context.GetCspNonce()">
+        MonitoringIndexController.init({ labels: @Json.Serialize(Model.DailyLabels), minutes: @Json.Serialize(Model.DailyMinutes) });
+    </script>
+}

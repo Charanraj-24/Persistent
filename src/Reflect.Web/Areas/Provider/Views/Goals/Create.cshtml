@@ -1,0 +1,27 @@
+@model Reflect.Web.Models.ViewModels.Provider.Goals.GoalFormViewModel
+@{
+    ViewData["Title"] = "Add goal";
+    ViewData["BreadcrumbParent"] = Model.PatientName;
+    ViewData["BreadcrumbParentUrl"] = Url.Action("Details", "Patients", new { id = Model.PatientId, tab = "goals" });
+}
+@section Styles {
+    <partial name="_FormStyles" />
+}
+
+<div class="rpd-page-header">
+    <div>
+        <h1 class="page-title mb-1">Add goal</h1>
+        <p class="text-muted fs-13 mb-0">Treatment goal for <strong>@Model.PatientName</strong>. Progress shows on the patient's Progress &amp; goals tab.</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xxl-9">
+        <partial name="_GoalForm" model="Model" />
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_FormScripts" />
+    <script nonce="@Context.GetCspNonce()">ProviderFormController.init();</script>
+}

@@ -1,0 +1,131 @@
+@model Reflect.Web.Models.ViewModels.Provider.Patients.PatientIndexViewModel
+@using Reflect.Web.Models.ViewModels.Provider.Patients
+@{
+    ViewData["Title"] = "Patients";
+    var filters = new[]
+    {
+        (Key: string.Empty, Label: "All patients", Count: Model.TotalCount, Icon: "ri-group-line"),
+        (Key: PatientIndexViewModel.FilterAttention, Label: "Needs attention", Count: Model.AttentionCount, Icon: "ri-alarm-warning-line"),
+        (Key: PatientIndexViewModel.FilterRtm, Label: "RTM follow-up", Count: Model.RtmFollowUpCount, Icon: "ri-file-list-3-line"),
+        (Key: PatientIndexViewModel.FilterInactive, Label: "Inactive 7+ days", Count: Model.InactiveCount, Icon: "ri-time-line")
+    };
+}
+@section Styles {
+    <partial name="_ProviderStyles" />
+}
+
+<div class="rpd-page-header">
+    <div>
+        <h1 class="page-title mb-1">Patients</h1>
+        <p class="text-muted fs-13 mb-0">Everyone on your caseload who uses Reflect XR or Reflect Mobile. Select a name to open their record.</p>
+    </div>
+    <div class="page-actions">
+        <a class="btn btn-primary" href="@Url.Action("Create", "Communications")"><i class="ri-chat-new-line me-1" aria-hidden="true"></i>Log communication</a>
+        <a class="btn btn-outline-secondary" href="@Url.Action("Create", "Monitoring")"><i class="ri-add-line me-1" aria-hidden="true"></i>Add monitoring time</a>
+    </div>
+</div>
+
+<nav class="rpd-filter-pills mb-3" aria-label="Filter patients">
+    @foreach (var f in filters)
+    {
+        var active = Model.Filter == f.Key;
+        <a class="btn btn-outline-secondary @(active ? "active" : string.Empty)" aria-current="@(active ? "page" : null)"
+           href="@Url.Action("Index", new { filter = string.IsNullOrEmpty(f.Key) ? null : f.Key })">
+            <i class="@f.Icon me-1" aria-hidden="true"></i>@f.Label<span class="badge">@f.Count</span>
+        </a>
+    }
+</nav>
+
+<div class="card custom-card">
+    <div class="card-header">
+        <div class="card-title">@(filters.First(f => f.Key == Model.Filter).Label)</div>
+        <span class="text-muted fs-12">Engagement is for the last 30 days. RTM is for the current month.</span>
+    </div>
+    <div class="card-body">
+        @if (Model.Rows.Count == 0)
+        {
+            <div class="rpd-empty"><i class="ri-user-smile-line" aria-hidden="true"></i>No patients match this filter.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-bordered text-nowrap align-middle dt-client w-100" data-page-length="25" data-order='[[0, "asc"]]'>
+                    <thead>
+                        <tr>
+                            <th scope="col">Patient</th>
+                            <th scope="col">Primary concern</th>
+                            <th scope="col">Uses</th>
+                            <th scope="col">Last active</th>
+                            <th scope="col">Sessions (30 d)</th>
+                            <th scope="col">PHQ-9</th>
+                            <th scope="col">RTM this month</th>
+                            <th scope="col">Flags</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in Model.Rows)
+                        {
+                            <tr>
+                                <td data-order="@r.Name">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span class="avatar avatar-sm avatar-rounded rpd-avatar">@r.Initials</span>
+                                        <div>
+                                            <a class="rpd-patient-link" href="@Url.Action("Details", new { id = r.Id })">@r.Name</a>
+                                            <div class="text-muted fs-12">@r.ChartNumber · @r.AgeAndPronouns</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>@r.Concern</td>
+                                <td data-order="@((r.UsesXr ? 1 : 0) + (r.UsesMobile ? 2 : 0))">
+                                    <span class="rpd-platform-icons d-inline-flex gap-2">
+                                        @if (r.UsesXr) { <span title="Reflect XR"><i class="ri-goggles-line" aria-hidden="true"></i><span class="visually-hidden">Reflect XR</span></span> }
+                                        @if (r.UsesMobile) { <span title="Reflect Mobile"><i class="ri-smartphone-line" aria-hidden="true"></i><span class="visually-hidden">Reflect Mobile</span></span> }
+                                    </span>
+                                </td>
+                                <td data-order="@(r.DaysSinceLastSession == int.MaxValue ? 99999 : r.DaysSinceLastSession)">
+                                    @if (r.DaysSinceLastSession >= AttentionRules.InactiveWarningDays)
+                                    {
+                                        <span class="text-warning"><i class="ri-time-line me-1" aria-hidden="true"></i></span>
+                                    }
+                                    @r.LastActiveLabel
+                                </td>
+                                <td data-order="@r.Sessions30">@r.Sessions30 <span class="text-muted fs-12">· @r.Minutes30 min</span></td>
+                                <td data-order="@(r.Phq9 ?? -1)">
+                                    @if (r.Phq9.HasValue)
+                                    {
+                                        <span class="fw-semibold">@r.Phq9</span>
+                                        if (r.Phq9Change.HasValue && r.Phq9Change != 0)
+                                        {
+                                            var worse = r.Phq9Change > 0;
+                                            <span class="fs-12 text-muted ms-1" title="Change since previous score"><i class="@(worse ? "ri-arrow-up-line" : "ri-arrow-down-line")" aria-hidden="true"></i>@(worse ? "+" : string.Empty)@r.Phq9Change</span>
+                                        }
+                                        <div><partial name="_StatusBadge" model="r.Phq9Band" /></div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">None yet</span>
+                                    }
+                                </td>
+                                <td data-order="@r.RtmMinutes">
+                                    <partial name="_StatusBadge" model="r.Rtm" />
+                                    <div class="text-muted fs-12 mt-1">@r.RtmDataDays data days · @r.RtmMinutes min</div>
+                                </td>
+                                <td data-order="@(r.NeedsAttention ? 0 : 1)">
+                                    @if (r.Attention != null)
+                                    {
+                                        <span title="@r.AttentionSummary"><partial name="_StatusBadge" model="r.Attention" /></span>
+                                        <div class="text-muted fs-12 mt-1 rpd-text-clamp" style="max-width: 14rem;">@r.AttentionSummary</div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted fs-12">None</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

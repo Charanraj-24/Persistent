@@ -1,0 +1,125 @@
+@model Reflect.Web.Models.ViewModels.Provider.Communications.CommunicationCreateViewModel
+@using System.Globalization
+@{
+    ViewData["Title"] = "Log communication";
+    if (Model.ReturnToPatient)
+    {
+        ViewData["BreadcrumbParent"] = Model.LockedPatientName;
+        ViewData["BreadcrumbParentUrl"] = Url.Action("Details", "Patients", new { id = Model.PatientId, tab = "communications" });
+    }
+    else
+    {
+        ViewData["BreadcrumbParent"] = "Communications";
+        ViewData["BreadcrumbParentUrl"] = Url.Action("Index");
+    }
+    var channels = new[]
+    {
+        (Value: CommunicationChannel.VideoCall, Label: "Video call", Icon: "ri-vidicon-line", Hint: "Interactive"),
+        (Value: CommunicationChannel.PhoneCall, Label: "Phone call", Icon: "ri-phone-line", Hint: "Interactive"),
+        (Value: CommunicationChannel.SecureMessage, Label: "Secure message", Icon: "ri-message-3-line", Hint: "Asynchronous"),
+        (Value: CommunicationChannel.InPersonVisit, Label: "In person", Icon: "ri-user-voice-line", Hint: "Not remote")
+    };
+    var cancelUrl = Model.ReturnToPatient ? Url.Action("Details", "Patients", new { id = Model.PatientId, tab = "communications" }) : Url.Action("Index");
+}
+@section Styles {
+    <partial name="_FormStyles" />
+}
+
+<div class="rpd-page-header">
+    <div>
+        <h1 class="page-title mb-1">Log communication</h1>
+        <p class="text-muted fs-13 mb-0">Record a contact that happened outside the dashboard, for example on Zoom, by phone, or through the patient portal.</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xxl-8 col-xl-9">
+        <form method="post" class="js-loading-submit" novalidate>
+            <input type="hidden" asp-for="ReturnToPatient" />
+            <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+            <div class="card custom-card">
+                <div class="card-header"><div class="card-title">Contact details</div></div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label asp-for="PatientId" class="form-label"></label>
+                            @if (Model.ReturnToPatient)
+                            {
+                                <input type="hidden" asp-for="PatientId" />
+                                <input type="text" class="form-control" value="@Model.LockedPatientName" readonly aria-readonly="true" id="PatientIdDisplay" />
+                            }
+                            else
+                            {
+                                <select asp-for="PatientId" class="form-select">
+                                    <option value="">Choose a patient</option>
+                                    @foreach (var p in Model.Patients)
+                                    {
+                                        <option value="@p.Id">@p.Label</option>
+                                    }
+                                </select>
+                            }
+                            <span asp-validation-for="PatientId" class="text-danger fs-12"></span>
+                        </div>
+
+                        <div class="col-12">
+                            <fieldset>
+                                <legend class="form-label">Type of contact</legend>
+                                <div class="row g-2">
+                                    @foreach (var c in channels)
+                                    {
+                                        <div class="col-6 col-md-3">
+                                            <input type="radio" class="btn-check" name="Channel" id="channel-@c.Value" value="@c.Value" autocomplete="off" @(Model.Channel == c.Value ? "checked" : null)>
+                                            <label class="btn btn-outline-secondary w-100 h-100 d-flex flex-column align-items-center py-2" for="channel-@c.Value">
+                                                <i class="@c.Icon fs-20" aria-hidden="true"></i>
+                                                <span>@c.Label</span>
+                                                <span class="fs-11 text-muted fw-normal">@c.Hint</span>
+                                            </label>
+                                        </div>
+                                    }
+                                </div>
+                                <p class="text-muted fs-12 mt-2 mb-0"><i class="ri-information-line me-1" aria-hidden="true"></i>RTM treatment management needs at least one interactive (video or phone) contact each month. Secure messages are documented but don't meet that requirement.</p>
+                            </fieldset>
+                        </div>
+
+                        <div class="col-sm-4">
+                            <label asp-for="OccurredDate" class="form-label"></label>
+                            <input asp-for="OccurredDate" class="form-control js-date" type="text" value="@Model.OccurredDate?.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)" data-max-date="today" />
+                            <span asp-validation-for="OccurredDate" class="text-danger fs-12"></span>
+                        </div>
+                        <div class="col-sm-4">
+                            <label asp-for="OccurredTime" class="form-label"></label>
+                            <input asp-for="OccurredTime" class="form-control js-time" type="text" value="@Model.OccurredTime?.ToString("HH:mm", CultureInfo.InvariantCulture)" />
+                            <span asp-validation-for="OccurredTime" class="text-danger fs-12"></span>
+                        </div>
+                        <div class="col-sm-4">
+                            <label asp-for="DurationMinutes" class="form-label"></label>
+                            <input asp-for="DurationMinutes" class="form-control" type="number" min="1" max="120" />
+                            <span asp-validation-for="DurationMinutes" class="text-danger fs-12"></span>
+                        </div>
+
+                        <div class="col-12">
+                            <label asp-for="Summary" class="form-label"></label>
+                            <textarea asp-for="Summary" class="form-control" rows="4" placeholder="What was discussed and any plan changes. Avoid details that aren't needed for care."></textarea>
+                            <span asp-validation-for="Summary" class="text-danger fs-12"></span>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input asp-for="DiscussedRemoteData" class="form-check-input" />
+                                <label asp-for="DiscussedRemoteData" class="form-check-label"></label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer d-flex flex-wrap gap-2 justify-content-end page-actions">
+                    <a class="btn btn-outline-secondary" href="@cancelUrl">Cancel</a>
+                    <button type="submit" class="btn btn-primary"><i class="ri-save-line me-1" aria-hidden="true"></i>Log communication</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_FormScripts" />
+    <script nonce="@Context.GetCspNonce()">ProviderFormController.init();</script>
+}

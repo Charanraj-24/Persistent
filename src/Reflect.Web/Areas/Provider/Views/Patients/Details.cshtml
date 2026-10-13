@@ -1,0 +1,714 @@
+@model Reflect.Web.Models.ViewModels.Provider.Patients.PatientDetailsViewModel
+@using System.Globalization
+@{
+    ViewData["Title"] = Model.FullName;
+    ViewData["BreadcrumbParent"] = "Patients";
+    ViewData["BreadcrumbParentUrl"] = Url.Action("Index", "Patients");
+    var s = Model.Last30Days;
+    var rtm = Model.Rtm.Summary;
+    var tabs = new[]
+    {
+        (Id: "overview", Label: "Overview", Icon: "ri-dashboard-3-line", Count: (int?)null),
+        (Id: "sessions", Label: "Sessions", Icon: "ri-play-list-2-line", Count: (int?)Model.Sessions.Count),
+        (Id: "goals", Label: "Progress & goals", Icon: "ri-flag-line", Count: (int?)Model.Goals.Count),
+        (Id: "communications", Label: "Communications", Icon: "ri-chat-3-line", Count: (int?)Model.Communications.Count),
+        (Id: "monitoring", Label: "Monitoring & billing", Icon: "ri-timer-line", Count: (int?)null),
+        (Id: "physiologic", Label: "Physiologic (RPM)", Icon: "ri-heart-pulse-line", Count: (int?)null)
+    };
+    string Pct(int value, int max) => (Math.Min(100.0, value * 100.0 / Math.Max(1, max))).ToString("0.##", CultureInfo.InvariantCulture);
+}
+@section Styles {
+    <partial name="_ProviderStyles" />
+}
+
+@Html.AntiForgeryToken()
+
+<div class="rpd-sticky-bar">
+    <div class="rpd-timer" id="monitorTimer" data-state="starting">
+        <span class="rpd-timer-dot" aria-hidden="true"></span>
+        <span class="d-flex flex-column lh-sm">
+            <span class="text-muted fs-11">Monitoring time · @Model.Rtm.PeriodLabel</span>
+            <span><span class="rpd-timer-time" id="monitorTimerTime">@StatusDisplay.FormatDuration(Model.Rtm.MonitoringSeconds)</span> <span class="fs-12 text-muted" id="monitorTimerState" role="status" aria-live="polite">Starting...</span></span>
+        </span>
+        <button type="button" class="btn btn-outline-secondary" id="monitorTimerToggle" aria-pressed="false">
+            <i class="ri-pause-line me-1" aria-hidden="true"></i><span class="js-label">Pause</span>
+        </button>
+    </div>
+</div>
+
+<div class="card custom-card">
+    <div class="card-body">
+        <div class="rpd-patient-header">
+            <span class="avatar avatar-lg avatar-rounded rpd-avatar">@Model.Initials</span>
+            <div class="flex-grow-1 min-w-0">
+                <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+                    <h1 class="page-title mb-0">@Model.FullName</h1>
+                    <partial name="_StatusBadge" model="Model.Status" />
+                    @if (string.IsNullOrEmpty(Model.RtmConsentOn))
+                    {
+                        <span class="badge rpd-badge bg-warning-transparent text-warning"><i class="ri-forbid-line me-1" aria-hidden="true"></i>No RTM consent</span>
+                    }
+                    else
+                    {
+                        <span class="badge rpd-badge bg-success-transparent text-success"><i class="ri-shield-check-line me-1" aria-hidden="true"></i>RTM since @Model.RtmConsentOn</span>
+                    }
+                </div>
+                <div class="rpd-facts">
+                    <span><i class="ri-hashtag" aria-hidden="true"></i>@Model.ChartNumber</span>
+                    <span><i class="ri-user-line" aria-hidden="true"></i>@Model.Age years@(string.IsNullOrEmpty(Model.Pronouns) ? string.Empty : " · " + Model.Pronouns)</span>
+                    <span><i class="ri-stethoscope-line" aria-hidden="true"></i>@Model.Concern</span>
+                    <span><i class="ri-calendar-line" aria-hidden="true"></i>Enrolled @Model.EnrolledOn</span>
+                    <span>
+                        @if (Model.UsesXr) { <span><i class="ri-goggles-line" aria-hidden="true"></i>Reflect XR</span> }
+                        @if (Model.UsesMobile) { <span class="ms-2"><i class="ri-smartphone-line" aria-hidden="true"></i>Reflect Mobile</span> }
+                    </span>
+                </div>
+            </div>
+            <div class="page-actions d-flex flex-wrap gap-2">
+                <a class="btn btn-primary" href="@Url.Action("Create", "Communications", new { patientId = Model.PatientId })"><i class="ri-chat-new-line me-1" aria-hidden="true"></i>Log communication</a>
+                <a class="btn btn-outline-secondary" href="@Url.Action("Create", "Goals", new { patientId = Model.PatientId })"><i class="ri-flag-line me-1" aria-hidden="true"></i>Add goal</a>
+                @if (!string.IsNullOrEmpty(Model.RtmConsentOn))
+                {
+                    <a class="btn btn-outline-secondary" href="@Url.Action("Create", "Monitoring", new { patientId = Model.PatientId })"><i class="ri-time-line me-1" aria-hidden="true"></i>Add time manually</a>
+                }
+            </div>
+        </div>
+
+        <div class="rpd-patient-stats">
+            <div class="rpd-stat"><div class="rpd-stat-label">Sessions (30 days)</div><div class="rpd-stat-value">@s.Sessions</div></div>
+            <div class="rpd-stat"><div class="rpd-stat-label">Time in Reflect (30 days)</div><div class="rpd-stat-value">@s.TotalMinutes<small> min</small></div></div>
+            <div class="rpd-stat"><div class="rpd-stat-label">Active days (30 days)</div><div class="rpd-stat-value">@s.ActiveDays<small> / 30</small></div></div>
+            <div class="rpd-stat"><div class="rpd-stat-label">Last active</div><div class="rpd-stat-value fs-18">@Model.LastActiveLabel</div></div>
+            <div class="rpd-stat">
+                <div class="rpd-stat-label">Mood change per session</div>
+                <div class="rpd-stat-value">
+                    @if (s.AverageMoodChange.HasValue)
+                    {
+                        var mc = s.AverageMoodChange.Value;
+                        <i class="@(mc >= 0 ? "ri-arrow-up-line" : "ri-arrow-down-line") fs-16" aria-hidden="true"></i>@(mc > 0 ? "+" : string.Empty)@mc.ToString("0.0", CultureInfo.InvariantCulture)
+                    }
+                    else { <span class="text-muted fs-16">No ratings</span> }
+                </div>
+            </div>
+            <div class="rpd-stat">
+                <div class="rpd-stat-label">Latest PHQ-9</div>
+                <div class="rpd-stat-value">@(Model.LatestPhq9?.ToString(CultureInfo.InvariantCulture) ?? "-")<small> / 27</small></div>
+                @if (Model.LatestPhq9Band != null) { <partial name="_StatusBadge" model="Model.LatestPhq9Band" /> }
+            </div>
+            <div class="rpd-stat">
+                <div class="rpd-stat-label">Latest GAD-7</div>
+                <div class="rpd-stat-value">@(Model.LatestGad7?.ToString(CultureInfo.InvariantCulture) ?? "-")<small> / 21</small></div>
+                @if (Model.LatestGad7Band != null) { <partial name="_StatusBadge" model="Model.LatestGad7Band" /> }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="patientTabs">
+    <ul class="nav nav-tabs mb-3 flex-nowrap overflow-auto" role="tablist">
+        @foreach (var t in tabs)
+        {
+            var active = Model.ActiveTab == t.Id;
+            <li class="nav-item" role="presentation">
+                <button class="nav-link text-nowrap @(active ? "active" : string.Empty)" id="tab-@t.Id" data-bs-toggle="tab" data-bs-target="#pane-@t.Id" data-tab="@t.Id" type="button" role="tab" aria-controls="pane-@t.Id" aria-selected="@(active ? "true" : "false")">
+                    <i class="@t.Icon me-1" aria-hidden="true"></i>@t.Label@if (t.Count.HasValue) {<span class="badge bg-info-transparent text-info ms-2">@t.Count</span>}
+                </button>
+            </li>
+        }
+    </ul>
+
+    <div class="tab-content">
+        @* ---------------- Overview ---------------- *@
+        <div class="tab-pane fade @(Model.ActiveTab == "overview" ? "show active" : string.Empty)" id="pane-overview" role="tabpanel" aria-labelledby="tab-overview" tabindex="0">
+            <div class="row">
+                <div class="col-xl-8">
+                    <div class="card custom-card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">Weekly engagement</div>
+                                <div class="text-muted fs-12">Minutes per week by platform, last 12 weeks</div>
+                            </div>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rpd-legend" aria-hidden="true">
+                                    <span class="rpd-legend-item"><span class="rpd-swatch rpd-swatch-xr"></span>Reflect XR</span>
+                                    <span class="rpd-legend-item"><span class="rpd-swatch rpd-swatch-mobile"></span>Reflect Mobile</span>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary rpd-table-toggle" id="weeklyTableBtn" aria-pressed="false"><i class="ri-table-line me-1" aria-hidden="true"></i><span class="js-toggle-label">Table</span></button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="rpd-chart" id="weeklyChartWrap"><canvas id="weeklyChart" role="img" aria-label="Weekly minutes in Reflect XR and Reflect Mobile. Use the Table button for values."></canvas></div>
+                            <div class="rpd-chart-table" id="weeklyTable"></div>
+                        </div>
+                    </div>
+
+                    <div class="card custom-card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">Mood before and after sessions</div>
+                                <div class="text-muted fs-12">Self-rated, 1 (very low) to 10 (very good), last @Reflect.Web.Models.ViewModels.Provider.Patients.PatientDetailsViewModel.MoodChartSessions rated sessions</div>
+                            </div>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rpd-legend" aria-hidden="true">
+                                    <span class="rpd-legend-item"><span class="rpd-swatch-line rpd-swatch-xr"></span>Before</span>
+                                    <span class="rpd-legend-item"><span class="rpd-swatch-line rpd-swatch-mobile"></span>After</span>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary rpd-table-toggle" id="moodTableBtn" aria-pressed="false"><i class="ri-table-line me-1" aria-hidden="true"></i><span class="js-toggle-label">Table</span></button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            @if (Model.MoodChart.Labels.Count == 0)
+                            {
+                                <div class="rpd-empty"><i class="ri-emotion-normal-line" aria-hidden="true"></i>No rated sessions yet.</div>
+                            }
+                            else
+                            {
+                                <div class="rpd-chart rpd-chart-sm" id="moodChartWrap"><canvas id="moodChart" role="img" aria-label="Mood before and after each recent session. Use the Table button for values."></canvas></div>
+                                <div class="rpd-chart-table" id="moodTable"></div>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-4">
+                    <div class="card custom-card">
+                        <div class="card-header"><div class="card-title">Flags</div></div>
+                        <div class="card-body">
+                            @if (Model.Attention.Count == 0)
+                            {
+                                <div class="rpd-empty py-3"><i class="ri-checkbox-circle-line" aria-hidden="true"></i>Nothing flagged for this patient.</div>
+                            }
+                            @foreach (var a in Model.Attention)
+                            {
+                                var badge = StatusDisplay.Attention(a.Severity);
+                                <div class="rpd-flag">
+                                    <span class="rpd-flag-icon bg-@badge.Color-transparent"><i class="@a.Icon" aria-hidden="true"></i></span>
+                                    <div>
+                                        <div class="d-flex flex-wrap align-items-center gap-2"><span class="fw-semibold">@a.Title</span><partial name="_StatusBadge" model="badge" /></div>
+                                        <div class="text-muted fs-13">@a.Detail</div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="card custom-card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">Talking points</div>
+                                <div class="text-muted fs-12">Generated from the data on this page</div>
+                            </div>
+                            <i class="ri-lightbulb-flash-line fs-20 text-info" aria-hidden="true"></i>
+                        </div>
+                        <div class="card-body">
+                            @if (Model.Insights.Count == 0)
+                            {
+                                <div class="rpd-empty py-3"><i class="ri-information-line" aria-hidden="true"></i>Not enough data yet.</div>
+                            }
+                            else
+                            {
+                                <ul class="rpd-insights">
+                                    @foreach (var i in Model.Insights)
+                                    {
+                                        <li><i class="@i.Icon" aria-hidden="true"></i><span>@i.Text</span></li>
+                                    }
+                                </ul>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="card custom-card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">Modules, last 90 days</div>
+                                <div class="text-muted fs-12">Minutes by module</div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-secondary rpd-table-toggle" id="moduleTableBtn" aria-pressed="false"><i class="ri-table-line me-1" aria-hidden="true"></i><span class="js-toggle-label">Table</span></button>
+                        </div>
+                        <div class="card-body">
+                            @if (Model.ModuleChart.Labels.Count == 0)
+                            {
+                                <div class="rpd-empty py-3"><i class="ri-apps-line" aria-hidden="true"></i>No sessions in the last 90 days.</div>
+                            }
+                            else
+                            {
+                                <div class="rpd-legend mb-2" aria-hidden="true">
+                                    <span class="rpd-legend-item"><span class="rpd-swatch rpd-swatch-xr"></span>Reflect XR</span>
+                                    <span class="rpd-legend-item"><span class="rpd-swatch rpd-swatch-mobile"></span>Reflect Mobile</span>
+                                </div>
+                                <div class="rpd-chart rpd-chart-sm" id="moduleChartWrap"><canvas id="moduleChart" role="img" aria-label="Minutes per module over the last 90 days. Use the Table button for values."></canvas></div>
+                                <div class="rpd-chart-table" id="moduleTable"></div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* ---------------- Sessions ---------------- *@
+        <div class="tab-pane fade @(Model.ActiveTab == "sessions" ? "show active" : string.Empty)" id="pane-sessions" role="tabpanel" aria-labelledby="tab-sessions" tabindex="0">
+            <div class="card custom-card">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">Session history</div>
+                        <div class="text-muted fs-12">Last @CaseloadSnapshot.HistoryDays days. Only remote sessions count as RTM data days.</div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    @if (Model.Sessions.Count == 0)
+                    {
+                        <div class="rpd-empty"><i class="ri-play-list-2-line" aria-hidden="true"></i>No sessions recorded.</div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-bordered text-nowrap align-middle dt-client w-100" data-page-length="15" data-order='[[0, "desc"]]'>
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Date and time</th>
+                                        <th scope="col">Platform</th>
+                                        <th scope="col">Module</th>
+                                        <th scope="col">Duration</th>
+                                        <th scope="col">Setting</th>
+                                        <th scope="col">Mood before → after</th>
+                                        <th scope="col">Output</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (var row in Model.Sessions)
+                                    {
+                                        <tr>
+                                            <td data-order="@row.SortKey">@row.DateTime</td>
+                                            <td><i class="@row.PlatformIcon me-1 text-muted" aria-hidden="true"></i>@row.PlatformName</td>
+                                            <td>@row.ModuleName@if (!string.IsNullOrEmpty(row.Pathway)) {<div class="text-muted fs-12">@row.Pathway</div>}</td>
+                                            <td data-order="@row.Minutes">@row.Minutes min@if (!row.Completed) {<div class="text-muted fs-12"><i class="ri-skip-forward-line me-1" aria-hidden="true"></i>Ended early</div>}</td>
+                                            <td><partial name="_StatusBadge" model="row.Setting" /></td>
+                                            <td data-order="@((row.MoodAfter ?? 0) - (row.MoodBefore ?? 0))">
+                                                @if (row.MoodBefore.HasValue && row.MoodAfter.HasValue)
+                                                {
+                                                    var d = row.MoodAfter.Value - row.MoodBefore.Value;
+                                                    <span>@row.MoodBefore → @row.MoodAfter</span>
+                                                    <span class="text-muted fs-12 ms-1"><i class="@(d > 0 ? "ri-arrow-up-line" : d < 0 ? "ri-arrow-down-line" : "ri-subtract-line")" aria-hidden="true"></i>@(d > 0 ? "+" : string.Empty)@d</span>
+                                                }
+                                                else { <span class="text-muted">Not rated</span> }
+                                            </td>
+                                            <td class="fs-12">
+                                                @if (row.Creations > 0) { <span class="me-2"><i class="ri-palette-line me-1" aria-hidden="true"></i>@row.Creations creation@(row.Creations == 1 ? string.Empty : "s")</span> }
+                                                @if (row.Reflection) { <span><i class="ri-quill-pen-line me-1" aria-hidden="true"></i>Reflection</span> }
+                                                @if (row.Creations == 0 && !row.Reflection) { <span class="text-muted">-</span> }
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @* ---------------- Progress & goals ---------------- *@
+        <div class="tab-pane fade @(Model.ActiveTab == "goals" ? "show active" : string.Empty)" id="pane-goals" role="tabpanel" aria-labelledby="tab-goals" tabindex="0">
+            <div class="card custom-card">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">Treatment goals</div>
+                        <div class="text-muted fs-12">Progress is measured from baseline toward target. "Behind" means more than @GoalProgressCalculator.BehindTolerancePercent points under where the timeline expects.</div>
+                    </div>
+                    <a class="btn btn-sm btn-primary" href="@Url.Action("Create", "Goals", new { patientId = Model.PatientId })"><i class="ri-add-line me-1" aria-hidden="true"></i>Add goal</a>
+                </div>
+                <div class="card-body">
+                    @if (Model.Goals.Count == 0)
+                    {
+                        <div class="rpd-empty"><i class="ri-flag-line" aria-hidden="true"></i>No goals yet. Add one to start tracking progress.</div>
+                    }
+                    <div class="row g-3">
+                        @foreach (var g in Model.Goals)
+                        {
+                            <div class="col-md-6 col-xxl-4">
+                                <article class="rpd-goal" aria-labelledby="goal-@g.Id">
+                                    <div class="d-flex justify-content-between align-items-start gap-2">
+                                        <div>
+                                            <h2 class="fs-16 mb-1" id="goal-@g.Id">@g.Title</h2>
+                                            <div class="text-muted fs-12">@g.MeasureName · @g.DirectionLabel</div>
+                                        </div>
+                                        <partial name="_StatusBadge" model="g.Track" />
+                                    </div>
+                                    @if (!string.IsNullOrEmpty(g.Description))
+                                    {
+                                        <p class="fs-13 mt-2 mb-0">@g.Description</p>
+                                    }
+                                    <div class="rpd-goal-values">
+                                        <div><strong>@g.Baseline</strong><span>Baseline</span></div>
+                                        <div><strong>@g.Current</strong><span>Current</span></div>
+                                        <div><strong>@g.Target</strong><span>Target</span></div>
+                                    </div>
+                                    <div class="d-flex justify-content-between fs-12 mb-1"><span class="fw-semibold">@g.Percent% of the way</span><span class="text-muted">Timeline: @g.ExpectedPercent%</span></div>
+                                    <div class="rpd-meter" role="progressbar" aria-label="@g.Title progress" aria-valuenow="@g.Percent" aria-valuemin="0" aria-valuemax="100">
+                                        <div class="rpd-meter-fill @(g.Percent >= 100 ? "is-complete" : string.Empty)" style="width: @(g.Percent)%"></div>
+                                        <div class="rpd-meter-tick" style="left: @(g.ExpectedPercent)%" title="Where the timeline expects progress to be"></div>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center mt-3 pt-2 border-top">
+                                        <span class="text-muted fs-12">@g.StartDate to @g.TargetDate</span>
+                                        <a class="btn btn-sm btn-outline-secondary" href="@Url.Action("Edit", "Goals", new { id = g.Id })"><i class="ri-edit-line me-1" aria-hidden="true"></i>Edit</a>
+                                    </div>
+                                </article>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <div class="row">
+                <div class="col-xl-7">
+                    <div class="card custom-card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">PHQ-9 and GAD-7 over time</div>
+                                <div class="text-muted fs-12">Lower scores mean fewer symptoms</div>
+                            </div>
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="rpd-legend" aria-hidden="true">
+                                    <span class="rpd-legend-item"><span class="rpd-swatch-line rpd-swatch-xr"></span>PHQ-9</span>
+                                    <span class="rpd-legend-item"><span class="rpd-swatch-line rpd-swatch-mobile"></span>GAD-7</span>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary rpd-table-toggle" id="assessmentTableBtn" aria-pressed="false"><i class="ri-table-line me-1" aria-hidden="true"></i><span class="js-toggle-label">Table</span></button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            @if (Model.AssessmentChart.Labels.Count == 0)
+                            {
+                                <div class="rpd-empty"><i class="ri-survey-line" aria-hidden="true"></i>No assessments yet.</div>
+                            }
+                            else
+                            {
+                                <div class="rpd-chart" id="assessmentChartWrap"><canvas id="assessmentChart" role="img" aria-label="PHQ-9 and GAD-7 scores over time. Use the Table button for values."></canvas></div>
+                                <div class="rpd-chart-table" id="assessmentTable"></div>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-5">
+                    <div class="card custom-card">
+                        <div class="card-header"><div class="card-title">Assessment history</div></div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-bordered text-nowrap align-middle dt-client w-100" data-page-length="8" data-order='[[0, "desc"]]'>
+                                    <thead><tr><th scope="col">Date</th><th scope="col">Measure</th><th scope="col">Score</th><th scope="col">Severity</th></tr></thead>
+                                    <tbody>
+                                        @foreach (var a in Model.AssessmentRows)
+                                        {
+                                            <tr>
+                                                <td data-order="@a.SortKey">@a.Date</td>
+                                                <td>@a.Instrument<div class="text-muted fs-12">@a.CompletedOn</div></td>
+                                                <td data-order="@a.Score"><span class="fw-semibold">@a.Score</span><span class="text-muted fs-12"> / @a.MaxScore</span></td>
+                                                <td><partial name="_StatusBadge" model="a.Band" /></td>
+                                            </tr>
+                                        }
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* ---------------- Communications ---------------- *@
+        <div class="tab-pane fade @(Model.ActiveTab == "communications" ? "show active" : string.Empty)" id="pane-communications" role="tabpanel" aria-labelledby="tab-communications" tabindex="0">
+            <div class="card custom-card">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title">Communication log</div>
+                        <div class="text-muted fs-12">Contacts that happened outside the dashboard (video, phone, secure message). Entries are read-only once logged.</div>
+                    </div>
+                    <a class="btn btn-sm btn-primary" href="@Url.Action("Create", "Communications", new { patientId = Model.PatientId })"><i class="ri-chat-new-line me-1" aria-hidden="true"></i>Log communication</a>
+                </div>
+                <div class="card-body">
+                    @if (Model.Communications.Count == 0)
+                    {
+                        <div class="rpd-empty"><i class="ri-chat-off-line" aria-hidden="true"></i>No communications logged yet.</div>
+                    }
+                    else
+                    {
+                        <div class="table-responsive">
+                            <table class="table table-bordered align-middle dt-client w-100" data-page-length="10" data-order='[[0, "desc"]]'>
+                                <thead><tr><th scope="col">When</th><th scope="col">Type</th><th scope="col">RTM interactive</th><th scope="col">Minutes</th><th scope="col">Summary</th></tr></thead>
+                                <tbody>
+                                    @foreach (var c in Model.Communications)
+                                    {
+                                        <tr>
+                                            <td class="text-nowrap" data-order="@c.SortKey">@c.When</td>
+                                            <td class="text-nowrap"><partial name="_StatusBadge" model="c.Channel" /></td>
+                                            <td class="text-nowrap">
+                                                @if (c.IsInteractive) { <span class="fs-13"><i class="ri-checkbox-circle-line text-success me-1" aria-hidden="true"></i>Yes</span> }
+                                                else { <span class="fs-13 text-muted"><i class="ri-subtract-line me-1" aria-hidden="true"></i>No (asynchronous)</span> }
+                                            </td>
+                                            <td data-order="@c.Minutes">@c.Minutes</td>
+                                            <td class="rpd-wrap fs-13">@c.Summary</td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        @* ---------------- Monitoring & billing ---------------- *@
+        <div class="tab-pane fade @(Model.ActiveTab == "monitoring" ? "show active" : string.Empty)" id="pane-monitoring" role="tabpanel" aria-labelledby="tab-monitoring" tabindex="0">
+            <div class="row">
+                <div class="col-xl-7">
+                    <div class="card custom-card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">RTM status, @Model.Rtm.PeriodLabel</div>
+                                <div class="text-muted fs-12">@rtm.DaysLeftInPeriod days left in this billing period</div>
+                            </div>
+                            <partial name="_StatusBadge" model="Model.Rtm.Readiness" />
+                        </div>
+                        <div class="card-body">
+                            <h2 class="fs-14 mb-1">Treatment-management time</h2>
+                            <p class="text-muted fs-12 mb-3">@rtm.MonitoringMinutes min reviewing data + @rtm.InteractiveMinutes min of interactive contact = <strong>@rtm.TreatmentMinutes min</strong>@if (rtm.NextThresholdMinutes.HasValue) {<span>. @rtm.MinutesToNextThreshold more to reach @rtm.NextThresholdMinutes min.</span>}</p>
+                            <div class="rpd-meter" role="progressbar" aria-label="Treatment-management minutes" aria-valuenow="@rtm.TreatmentMinutes" aria-valuemin="0" aria-valuemax="@Model.Rtm.MeterMaxMinutes">
+                                <div class="rpd-meter-fill @(rtm.TreatmentMinutes >= 20 ? "is-complete" : string.Empty)" style="width: @Pct(rtm.TreatmentMinutes, Model.Rtm.MeterMaxMinutes)%"></div>
+                                @for (var t = 10; t < Model.Rtm.MeterMaxMinutes; t = t < 20 ? 20 : t + 20)
+                                {
+                                    <div class="rpd-meter-tick" style="left: @Pct(t, Model.Rtm.MeterMaxMinutes)%"></div>
+                                }
+                            </div>
+                            <div class="rpd-meter-scale" aria-hidden="true">
+                                <span style="left: 0">0</span>
+                                @for (var t = 10; t < Model.Rtm.MeterMaxMinutes; t = t < 20 ? 20 : t + 20)
+                                {
+                                    <span style="left: @Pct(t, Model.Rtm.MeterMaxMinutes)%">@t</span>
+                                }
+                            </div>
+
+                            <div class="d-flex flex-wrap gap-3 mt-3 fs-13">
+                                <span>
+                                    @if (rtm.HasInteractiveCommunication) { <i class="ri-checkbox-circle-line text-success me-1" aria-hidden="true"></i><span>Interactive contact logged this month</span> }
+                                    else { <i class="ri-error-warning-line text-warning me-1" aria-hidden="true"></i><span>No interactive contact yet this month</span> }
+                                </span>
+                            </div>
+
+                            <h2 class="fs-14 mt-4 mb-2">Eligible codes so far</h2>
+                            @if (rtm.Codes.Count == 0)
+                            {
+                                <p class="text-muted fs-13 mb-0">None yet.</p>
+                            }
+                            else
+                            {
+                                <ul class="list-unstyled mb-0">
+                                    @foreach (var c in rtm.Codes)
+                                    {
+                                        <li class="d-flex align-items-center gap-2 mb-2"><span class="rpd-code">@c.Code@if (c.Units > 1) {<span class="rpd-code-units">× @c.Units</span>}</span><span class="fs-13">@c.Description</span></li>
+                                    }
+                                </ul>
+                            }
+                            @if (rtm.Blockers.Count > 0)
+                            {
+                                <h2 class="fs-14 mt-3 mb-2">Still open</h2>
+                                <ul class="rpd-blockers fs-13">
+                                    @foreach (var b in rtm.Blockers)
+                                    {
+                                        <li><i class="ri-arrow-right-s-line" aria-hidden="true"></i>@b</li>
+                                    }
+                                </ul>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="card custom-card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">Monitoring time this month</div>
+                                <div class="text-muted fs-12">Recorded automatically while this record is open, plus any manual entries. Entries can't be edited.</div>
+                            </div>
+                            @if (!string.IsNullOrEmpty(Model.RtmConsentOn))
+                            {
+                                <a class="btn btn-sm btn-outline-secondary" href="@Url.Action("Create", "Monitoring", new { patientId = Model.PatientId })"><i class="ri-add-line me-1" aria-hidden="true"></i>Add time</a>
+                            }
+                        </div>
+                        <div class="card-body">
+                            @if (Model.Rtm.Entries.Count == 0)
+                            {
+                                <div class="rpd-empty py-3"><i class="ri-timer-line" aria-hidden="true"></i>No monitoring time yet this month.</div>
+                            }
+                            else
+                            {
+                                <div class="table-responsive">
+                                    <table class="table table-bordered align-middle dt-client w-100" data-page-length="8" data-order='[[0, "desc"]]'>
+                                        <thead><tr><th scope="col">Started</th><th scope="col">Active time</th><th scope="col">Source</th><th scope="col">Note</th></tr></thead>
+                                        <tbody>
+                                            @foreach (var e in Model.Rtm.Entries)
+                                            {
+                                                <tr>
+                                                    <td class="text-nowrap" data-order="@e.SortKey">@e.When</td>
+                                                    <td class="text-nowrap" data-order="@e.Seconds">@e.Duration</td>
+                                                    <td class="text-nowrap"><partial name="_StatusBadge" model="e.Source" /></td>
+                                                    <td class="rpd-wrap fs-13">@(string.IsNullOrEmpty(e.Note) ? "-" : e.Note)</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-5">
+                    <div class="card custom-card">
+                        <div class="card-header">
+                            <div>
+                                <div class="card-title">Remote data days</div>
+                                <div class="text-muted fs-12">@rtm.DataDays of @rtm.DataDaysRequired days with a remote session</div>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div class="rpd-calendar" role="list" aria-label="Data days in @Model.Rtm.PeriodLabel">
+                                @foreach (var d in new[] { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" })
+                                {
+                                    <div class="rpd-calendar-head" aria-hidden="true">@d</div>
+                                }
+                                @for (var i = 0; i < Model.Rtm.LeadingBlankDays; i++)
+                                {
+                                    <div aria-hidden="true"></div>
+                                }
+                                @foreach (var d in Model.Rtm.Days)
+                                {
+                                    <div class="rpd-day @(d.IsToday ? "is-today" : string.Empty)" data-state="@d.State" role="listitem" aria-label="@d.Label" title="@d.Label">
+                                        <span>@d.Day</span>
+                                        @if (d.State == "data") { <i class="ri-check-line" aria-hidden="true"></i> }
+                                        else if (d.State == "clinic") { <i class="ri-hospital-line" aria-hidden="true"></i> }
+                                    </div>
+                                }
+                            </div>
+                            <div class="rpd-legend mt-3">
+                                <span class="rpd-legend-item"><i class="ri-check-line" aria-hidden="true"></i>Remote data day</span>
+                                <span class="rpd-legend-item"><i class="ri-hospital-line" aria-hidden="true"></i>In clinic only (doesn't count)</span>
+                                <span class="rpd-legend-item"><span class="rpd-swatch" style="outline: 2px solid rgb(var(--primary-rgb));"></span>Today</span>
+                            </div>
+                            @if (!rtm.CanStillReachFullDataDays && rtm.DaysLeftInPeriod > 0)
+                            {
+                                <div class="rpd-disclaimer mt-3"><i class="ri-error-warning-line" aria-hidden="true"></i><span>16 data days can't be reached this month. The 2-15 day device code (98986) still applies from 2 days.</span></div>
+                            }
+                        </div>
+                    </div>
+                    <div class="rpd-disclaimer">
+                        <i class="ri-information-line" aria-hidden="true"></i>
+                        <span>Codes are decision support based on CPT RTM rules for cognitive behavioral therapy monitoring. Confirm with your billing team before submitting a claim.</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @* ---------------- Physiologic (RPM preview) ---------------- *@
+        <div class="tab-pane fade @(Model.ActiveTab == "physiologic" ? "show active" : string.Empty)" id="pane-physiologic" role="tabpanel" aria-labelledby="tab-physiologic" tabindex="0">
+            @if (!Model.Physiologic.HasData)
+            {
+                <div class="card custom-card">
+                    <div class="card-body">
+                        <div class="rpd-empty">
+                            <i class="ri-heart-pulse-line" aria-hidden="true"></i>
+                            <div class="fw-semibold text-body mb-1">No physiologic data for this patient</div>
+                            <p class="mb-3 fs-13">This tab fills in automatically once a heart-rate capable device is paired. It already supports:</p>
+                            <div class="d-flex flex-wrap justify-content-center gap-2">
+                                @foreach (var m in Model.Physiologic.SupportedMetrics)
+                                {
+                                    <span class="badge rpd-badge bg-info-transparent text-info"><i class="@m.Icon me-1" aria-hidden="true"></i>@m.Name (@m.Unit)</span>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                var p = Model.Physiologic;
+                <div class="rpd-disclaimer mb-3"><i class="ri-flask-line" aria-hidden="true"></i><span><strong>Preview.</strong> Remote Physiologic Monitoring is a future phase. Readings come from @p.DeviceName, captured at the start and end of each VR session. Last reading @p.LastReading.</span></div>
+                <div class="rpd-patient-stats mt-0 mb-4">
+                    <div class="rpd-stat"><div class="rpd-stat-label">Avg heart rate at session start</div><div class="rpd-stat-value">@p.AverageStartHeartRate<small> bpm</small></div></div>
+                    <div class="rpd-stat"><div class="rpd-stat-label">Avg heart rate at session end</div><div class="rpd-stat-value">@p.AverageEndHeartRate<small> bpm</small></div></div>
+                    <div class="rpd-stat"><div class="rpd-stat-label">Avg HRV change per session</div><div class="rpd-stat-value">@(p.AverageHrvChange > 0 ? "+" : string.Empty)@p.AverageHrvChange.ToString("0.#", CultureInfo.InvariantCulture)<small> ms</small></div></div>
+                    <div class="rpd-stat"><div class="rpd-stat-label">VR sessions with readings</div><div class="rpd-stat-value">@p.SessionCount</div></div>
+                </div>
+                <div class="row">
+                    <div class="col-xl-6">
+                        <div class="card custom-card">
+                            <div class="card-header">
+                                <div>
+                                    <div class="card-title">Heart rate, start vs. end of session</div>
+                                    <div class="text-muted fs-12">Beats per minute, recent VR sessions</div>
+                                </div>
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="rpd-legend" aria-hidden="true">
+                                        <span class="rpd-legend-item"><span class="rpd-swatch-line rpd-swatch-mobile"></span>Start</span>
+                                        <span class="rpd-legend-item"><span class="rpd-swatch-line rpd-swatch-xr"></span>End</span>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary rpd-table-toggle" id="hrTableBtn" aria-pressed="false"><i class="ri-table-line me-1" aria-hidden="true"></i><span class="js-toggle-label">Table</span></button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="rpd-chart" id="hrChartWrap"><canvas id="hrChart" role="img" aria-label="Heart rate at the start and end of each VR session. Use the Table button for values."></canvas></div>
+                                <div class="rpd-chart-table" id="hrTable"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-6">
+                        <div class="card custom-card">
+                            <div class="card-header">
+                                <div>
+                                    <div class="card-title">Heart rate variability (RMSSD)</div>
+                                    <div class="text-muted fs-12">Milliseconds; higher usually means calmer</div>
+                                </div>
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="rpd-legend" aria-hidden="true">
+                                        <span class="rpd-legend-item"><span class="rpd-swatch-line rpd-swatch-mobile"></span>Start</span>
+                                        <span class="rpd-legend-item"><span class="rpd-swatch-line rpd-swatch-xr"></span>End</span>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-secondary rpd-table-toggle" id="hrvTableBtn" aria-pressed="false"><i class="ri-table-line me-1" aria-hidden="true"></i><span class="js-toggle-label">Table</span></button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="rpd-chart" id="hrvChartWrap"><canvas id="hrvChart" role="img" aria-label="Heart rate variability at the start and end of each VR session. Use the Table button for values."></canvas></div>
+                                <div class="rpd-chart-table" id="hrvTable"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ChartScripts" />
+    <script src="~/js/services/provider/monitoringService.js" asp-append-version="true"></script>
+    <script src="~/js/controllers/provider/monitoringTimerController.js" asp-append-version="true"></script>
+    <script src="~/js/controllers/provider/patientDetailsController.js" asp-append-version="true"></script>
+    <script nonce="@Context.GetCspNonce()">
+        PatientDetailsController.init({
+            patientId: '@Model.PatientId',
+            trackingEnabled: true,
+            periodSeconds: @Model.Rtm.MonitoringSeconds,
+            messages: {
+                saveFailed: @Json.Serialize(Reflect.Web.Messages.ProviderDashboardMessages.TrackingSaveFailed),
+                paused: @Json.Serialize(Reflect.Web.Messages.ProviderDashboardMessages.TrackingPaused),
+                resumed: @Json.Serialize(Reflect.Web.Messages.ProviderDashboardMessages.TrackingResumed)
+            },
+            urls: {
+                start: '@Url.Action("Start", "Monitoring")',
+                heartbeat: '@Url.Action("Heartbeat", "Monitoring")',
+                details: '@Url.Action("Details", "Patients", new { id = Model.PatientId })'
+            },
+            charts: {
+                weekly: @Json.Serialize(Model.WeeklyChart),
+                modules: @Json.Serialize(Model.ModuleChart),
+                mood: @Json.Serialize(Model.MoodChart),
+                assessments: @Json.Serialize(Model.AssessmentChart),
+                physiologic: @Json.Serialize(new { Model.Physiologic.HasData, Model.Physiologic.Labels, Model.Physiologic.HeartRateStart, Model.Physiologic.HeartRateEnd, Model.Physiologic.HrvStart, Model.Physiologic.HrvEnd })
+            }
+        });
+    </script>
+}

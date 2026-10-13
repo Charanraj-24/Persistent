@@ -1,0 +1,196 @@
+@*
+    STAND-IN LAYOUT (delete on merge).
+    A lookalike of the Reflect XR shell: sidebar, header, breadcrumb, theme toggle, accessibility panel.
+    Screens must not depend on anything in here; they bring their own CSS/JS via @section Styles / Scripts.
+*@
+@inject IWebHostEnvironment Env
+@inject Reflect.Domain.Common.ICurrentUserService CurrentUser
+@using Reflect.Web.Messages
+@{
+    var title = ViewData["Title"] as string ?? "Provider Dashboard";
+    var currentPath = Context.Request.Path.Value ?? string.Empty;
+    var menu = SidebarMenuProvider.Load(Env);
+    var currentUser = DemoUsers.All.FirstOrDefault(u => u.UserId == CurrentUser.UserId) ?? DemoUsers.All[0];
+    var initials = string.Concat(currentUser.DisplayName.Replace("Dr. ", string.Empty).Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(p => p[0]));
+    var parentTitle = ViewData["BreadcrumbParent"] as string;
+    var parentUrl = ViewData["BreadcrumbParentUrl"] as string;
+}
+<!DOCTYPE html>
+<html lang="en" data-theme-mode="light" data-bs-theme="light">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@title · Reflect Provider Dashboard</title>
+    <script src="~/standins/js/theme-boot-standin.js"></script>
+    <link rel="stylesheet" href="~/assets/libs/bootstrap/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/assets/libs/remixicon/remixicon.css" />
+    <link rel="stylesheet" href="~/assets/libs/toastr/toastr.min.css" />
+    <link rel="stylesheet" href="~/assets/libs/sweetalert2/sweetalert2.min.css" />
+    <link rel="stylesheet" href="~/assets/libs/datatables/dataTables.bootstrap5.min.css" />
+    <link rel="stylesheet" href="~/assets/libs/datatables/responsive.bootstrap5.min.css" />
+    <link rel="stylesheet" href="~/standins/css/theme-standin.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    <a class="visually-hidden-focusable position-absolute m-2 btn btn-primary" href="#mainContent">Skip to main content</a>
+    <div class="app-shell">
+        <aside class="app-sidebar" id="appSidebar" aria-label="Main navigation">
+            <a class="sidebar-brand" href="/">
+                <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+                    <rect width="32" height="32" rx="9" fill="#FF8282" />
+                    <path d="M9 22.5c2.2-6.5 5-9.8 8.4-9.8 2.7 0 3.9 2 3.9 4.1 0 3.2-2.6 5.4-6.1 5.4" fill="none" stroke="#1F305E" stroke-width="2.6" stroke-linecap="round" />
+                    <circle cx="22.6" cy="10" r="2.3" fill="#FAFAFB" />
+                </svg>
+                <span class="brand-text">Reflect<span class="brand-sub">Provider Dashboard</span></span>
+            </a>
+            <ul class="side-menu">
+                @foreach (var item in menu)
+                {
+                    if (item.IsCategory)
+                    {
+                        <li class="side-menu__category">@item.Label</li>
+                    }
+                    else
+                    {
+                        var active = SidebarMenuProvider.IsActive(item, currentPath);
+                        <li>
+                            <a class="side-menu__item @(active ? "active" : string.Empty)" href="@item.Url" title="@item.Label" aria-current="@(active ? "page" : null)">
+                                <i class="@item.Icon" aria-hidden="true"></i>
+                                <span class="side-menu__label">@item.Label</span>
+                            </a>
+                        </li>
+                    }
+                }
+            </ul>
+            <div class="sidebar-footer">
+                <i class="ri-shield-check-line me-1" aria-hidden="true"></i>Demo build · synthetic data only
+            </div>
+        </aside>
+        <div class="sidebar-backdrop" id="sidebarBackdrop"></div>
+
+        <div class="app-main">
+            <header class="app-header">
+                <button type="button" class="header-btn" id="sidebarToggle" aria-label="Toggle navigation" aria-controls="appSidebar">
+                    <i class="ri-menu-2-line" aria-hidden="true"></i>
+                </button>
+                <span class="header-facility d-none d-md-inline"><i class="ri-hospital-line me-1" aria-hidden="true"></i>Harborview Behavioral Health</span>
+                <div class="ms-auto d-flex align-items-center gap-1">
+                    <div class="dropdown">
+                        <button type="button" class="header-btn" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications">
+                            <i class="ri-notification-3-line" aria-hidden="true"></i>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end p-3" style="min-width: 16rem;">
+                            <div class="fw-semibold mb-1">Notifications</div>
+                            <div class="text-muted fs-13">You're all caught up.</div>
+                        </div>
+                    </div>
+                    <button type="button" class="header-btn" id="themeToggle" aria-label="Toggle light or dark mode">
+                        <i class="js-theme-icon ri-moon-line" aria-hidden="true"></i>
+                    </button>
+                    <button type="button" class="header-btn" data-bs-toggle="offcanvas" data-bs-target="#a11yPanel" aria-controls="a11yPanel" aria-label="Accessibility settings">
+                        <i class="ri-eye-line" aria-hidden="true"></i>
+                    </button>
+                    <div class="dropdown">
+                        <button type="button" class="header-profile" data-bs-toggle="dropdown" aria-expanded="false">
+                            <span class="avatar avatar-sm avatar-rounded bg-primary-transparent">@initials</span>
+                            <span class="d-none d-sm-flex flex-column text-start lh-sm">
+                                <span class="fw-semibold fs-13">@currentUser.DisplayName</span>
+                                <span class="text-muted fs-11">@(currentUser.Role == DemoUsers.ProviderRole ? "Provider" : "End User")</span>
+                            </span>
+                            <i class="ri-arrow-down-s-line text-muted" aria-hidden="true"></i>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end" style="min-width: 17rem;">
+                            <h6 class="dropdown-header">Switch test user (demo)</h6>
+                            @foreach (var user in DemoUsers.All)
+                            {
+                                <form method="post" action="/Account/SwitchUser" class="m-0">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="userId" value="@user.UserId" />
+                                    <button type="submit" class="dropdown-item d-flex align-items-start gap-2 py-2">
+                                        <i class="@(user.UserId == currentUser.UserId ? "ri-checkbox-circle-line text-success" : "ri-user-line text-muted") mt-1" aria-hidden="true"></i>
+                                        <span>
+                                            <span class="d-block fw-semibold">@user.DisplayName</span>
+                                            <span class="d-block text-muted fs-12">@user.Description</span>
+                                        </span>
+                                    </button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <nav class="breadcrumb-row" aria-label="Breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/Provider/Dashboard/Index">Provider Dashboard</a></li>
+                    @if (!string.IsNullOrEmpty(parentTitle))
+                    {
+                        <li class="breadcrumb-item"><a href="@parentUrl">@parentTitle</a></li>
+                    }
+                    <li class="breadcrumb-item active" aria-current="page">@title</li>
+                </ol>
+            </nav>
+
+            <main class="app-content" id="mainContent" tabindex="-1">
+                @RenderBody()
+            </main>
+
+            <footer class="app-footer d-flex flex-wrap justify-content-between gap-2">
+                <span>Reflect Provider Dashboard · Challenge X prototype</span>
+                <span><i class="ri-information-line me-1" aria-hidden="true"></i>All patients and values are synthetic. Not for clinical use.</span>
+            </footer>
+        </div>
+    </div>
+
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="a11yPanel" aria-labelledby="a11yPanelLabel">
+        <div class="offcanvas-header border-bottom">
+            <h2 class="offcanvas-title fs-18" id="a11yPanelLabel"><i class="ri-eye-line me-2" aria-hidden="true"></i>Accessibility</h2>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            <fieldset class="mb-4">
+                <legend class="form-label">Theme</legend>
+                <div class="btn-group w-100" role="group">
+                    <input type="radio" class="btn-check" name="a11yTheme" id="a11yThemeLight" value="light" autocomplete="off">
+                    <label class="btn btn-outline-secondary" for="a11yThemeLight"><i class="ri-sun-line me-1" aria-hidden="true"></i>Light</label>
+                    <input type="radio" class="btn-check" name="a11yTheme" id="a11yThemeDark" value="dark" autocomplete="off">
+                    <label class="btn btn-outline-secondary" for="a11yThemeDark"><i class="ri-moon-line me-1" aria-hidden="true"></i>Dark</label>
+                </div>
+            </fieldset>
+            <div class="form-check form-switch mb-4">
+                <input class="form-check-input" type="checkbox" role="switch" id="a11yColorBlind">
+                <label class="form-check-label" for="a11yColorBlind">Color-blind friendly mode</label>
+            </div>
+            <div class="mb-4">
+                <label class="form-label d-flex justify-content-between" for="a11yTextSize">Text size <span id="a11yTextSizeValue" class="text-muted">100%</span></label>
+                <input type="range" class="form-range" id="a11yTextSize" min="87.5" max="137.5" step="12.5" value="100">
+            </div>
+            <button type="button" class="btn btn-outline-secondary w-100" id="a11yReset">Reset to defaults</button>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="loadingOverlay" role="status" aria-live="polite" aria-hidden="true">
+        <div class="spinner-border" aria-hidden="true"></div>
+        <div class="loading-text fw-semibold">Loading...</div>
+    </div>
+
+    <script src="~/assets/libs/jquery/jquery.min.js"></script>
+    <script src="~/assets/libs/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="~/assets/libs/datatables/jquery.dataTables.min.js"></script>
+    <script src="~/assets/libs/datatables/dataTables.bootstrap5.min.js"></script>
+    <script src="~/assets/libs/datatables/dataTables.responsive.min.js"></script>
+    <script src="~/assets/libs/datatables/responsive.bootstrap5.min.js"></script>
+    <script src="~/assets/libs/toastr/toastr.min.js"></script>
+    <script src="~/assets/libs/sweetalert2/sweetalert2.min.js"></script>
+    <script src="~/standins/js/shared-services-standin.js" asp-append-version="true"></script>
+    <script src="~/standins/js/layout-standin.js" asp-append-version="true"></script>
+    <script nonce="@Context.GetCspNonce()">
+        $(function () {
+            MessageService.showToastrMessage(@Json.Serialize(TempData[TempDataKeys.Success] as string ?? string.Empty), 'success', 5000);
+            MessageService.showToastrMessage(@Json.Serialize(TempData[TempDataKeys.Error] as string ?? string.Empty), 'error', 6000);
+            MessageService.showToastrMessage(@Json.Serialize(TempData[TempDataKeys.Info] as string ?? string.Empty), 'info', 5000);
+        });
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

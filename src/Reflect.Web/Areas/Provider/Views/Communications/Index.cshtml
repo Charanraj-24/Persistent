@@ -1,0 +1,103 @@
+@model Reflect.Web.Models.ViewModels.Provider.Communications.CommunicationIndexViewModel
+@{
+    ViewData["Title"] = "Communications";
+}
+@section Styles {
+    <partial name="_ProviderStyles" />
+}
+
+<div class="rpd-page-header">
+    <div>
+        <h1 class="page-title mb-1">Communications</h1>
+        <p class="text-muted fs-13 mb-0">Every documented contact with your patients in @Model.Period.Label. The conversation itself happens elsewhere; this is the record.</p>
+    </div>
+    <div class="page-actions">
+        <form method="get" class="d-flex align-items-center gap-2">
+            <label for="period" class="visually-hidden">Billing period</label>
+            <select id="period" name="period" class="form-select js-auto-submit-select">
+                @foreach (var o in Model.PeriodOptions)
+                {
+                    <option value="@o.Key" selected="@o.Selected">@o.Label</option>
+                }
+            </select>
+        </form>
+        <a class="btn btn-primary" href="@Url.Action("Create")"><i class="ri-chat-new-line me-1" aria-hidden="true"></i>Log communication</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card custom-card rpd-kpi"><div class="card-body">
+            <span class="rpd-kpi-icon bg-info-transparent"><i class="ri-chat-3-line" aria-hidden="true"></i></span>
+            <div><div class="rpd-kpi-label">Contacts logged</div><div class="rpd-kpi-value">@Model.TotalCount</div><div class="rpd-kpi-foot">@Model.TotalMinutes minutes in total</div></div>
+        </div></div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card custom-card rpd-kpi"><div class="card-body">
+            <span class="rpd-kpi-icon bg-success-transparent"><i class="ri-vidicon-line" aria-hidden="true"></i></span>
+            <div><div class="rpd-kpi-label">Interactive (video or phone)</div><div class="rpd-kpi-value">@Model.InteractiveCount</div><div class="rpd-kpi-foot">@(Model.TotalCount - Model.InteractiveCount) asynchronous or in person</div></div>
+        </div></div>
+    </div>
+    <div class="col-xl-6">
+        <div class="card custom-card rpd-kpi"><div class="card-body">
+            <span class="rpd-kpi-icon bg-warning-transparent"><i class="ri-phone-line" aria-hidden="true"></i></span>
+            <div class="flex-grow-1">
+                <div class="rpd-kpi-label">RTM patients with an interactive contact</div>
+                <div class="rpd-kpi-value">@Model.EnrolledWithInteractive<small>of @Model.EnrolledPatients</small></div>
+                @if (Model.MissingInteractive.Count > 0)
+                {
+                    <div class="rpd-kpi-foot">
+                        Still needed@(Model.IsCurrentPeriod ? string.Empty : " (period closed)"):
+                        @for (var i = 0; i < Model.MissingInteractive.Count; i++)
+                        {
+                            var p = Model.MissingInteractive[i];
+                            if (Model.IsCurrentPeriod)
+                            {
+                                <a href="@Url.Action("Create", new { patientId = p.Id })">@p.Label.Split(" (")[0]</a>
+                            }
+                            else
+                            {
+                                <span>@p.Label.Split(" (")[0]</span>
+                            }
+                            @(i < Model.MissingInteractive.Count - 1 ? "; " : string.Empty)
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="rpd-kpi-foot"><i class="ri-checkbox-circle-line me-1" aria-hidden="true"></i>Every enrolled patient has one.</div>
+                }
+            </div>
+        </div></div>
+    </div>
+</div>
+
+<div class="card custom-card">
+    <div class="card-header"><div class="card-title">Log for @Model.Period.Label</div></div>
+    <div class="card-body">
+        @if (Model.Rows.Count == 0)
+        {
+            <div class="rpd-empty"><i class="ri-chat-off-line" aria-hidden="true"></i>Nothing logged for this period.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-bordered align-middle dt-client w-100" data-page-length="15" data-order='[[0, "desc"]]'>
+                    <thead><tr><th scope="col">When</th><th scope="col">Patient</th><th scope="col">Type</th><th scope="col">Minutes</th><th scope="col">Summary</th></tr></thead>
+                    <tbody>
+                        @foreach (var c in Model.Rows)
+                        {
+                            <tr>
+                                <td class="text-nowrap" data-order="@c.SortKey">@c.When</td>
+                                <td class="text-nowrap"><a class="rpd-patient-link" href="@Url.Action("Details", "Patients", new { id = c.PatientId, tab = "communications" })">@c.PatientName</a></td>
+                                <td class="text-nowrap"><partial name="_StatusBadge" model="c.Channel" /></td>
+                                <td data-order="@c.Minutes">@c.Minutes</td>
+                                <td class="rpd-wrap fs-13">@c.Summary</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

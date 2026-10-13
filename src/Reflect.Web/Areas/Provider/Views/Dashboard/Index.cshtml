@@ -1,0 +1,272 @@
+@model Reflect.Web.Models.ViewModels.Provider.Dashboard.DashboardIndexViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+@section Styles {
+    <partial name="_ProviderStyles" />
+}
+
+<section class="rpd-hero" aria-labelledby="dashTitle">
+    <div class="row g-4 align-items-center position-relative" style="z-index: 1;">
+        <div class="col-lg-6">
+            <p class="rpd-hero-sub mb-1">@Model.TodayLabel</p>
+            <h1 class="page-title mb-1" id="dashTitle">@Model.Greeting, @Model.ProviderFirstName</h1>
+            <p class="rpd-hero-sub mb-3">
+                @if (Model.NeedsAttentionCount > 0)
+                {
+                    <span>@Model.NeedsAttentionCount of your patients need a look today, and @Model.PeriodDaysLeft days remain in the @Model.PeriodLabel billing period.</span>
+                }
+                else
+                {
+                    <span>No one is flagged today. @Model.PeriodDaysLeft days remain in the @Model.PeriodLabel billing period.</span>
+                }
+            </p>
+            <div class="page-actions d-flex flex-wrap gap-2">
+                <a class="btn btn-primary" href="@Url.Action("Index", "Patients", new { filter = "attention" })"><i class="ri-user-search-line me-1" aria-hidden="true"></i>Review flagged patients</a>
+                <a class="btn btn-outline-light" href="@Url.Action("Index", "Billing")"><i class="ri-file-list-3-line me-1" aria-hidden="true"></i>RTM billing</a>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="row g-3 text-lg-end">
+                <div class="col-4 rpd-hero-stat"><strong>@Model.ActivePatients</strong><span>Active patients</span></div>
+                <div class="col-4 rpd-hero-stat"><strong>@Model.RtmEnrolledPatients</strong><span>Enrolled in RTM</span></div>
+                <div class="col-4 rpd-hero-stat"><strong>@StatusDisplay.FormatMinutes(Model.MonitoringMinutesThisPeriod)</strong><span>Your monitoring time</span></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="row">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card custom-card rpd-kpi">
+            <div class="card-body">
+                <span class="rpd-kpi-icon bg-success-transparent"><i class="ri-calendar-check-line" aria-hidden="true"></i></span>
+                <div>
+                    <div class="rpd-kpi-label">Sessions, last 7 days</div>
+                    <div class="rpd-kpi-value">@Model.SessionsLast7Days</div>
+                    <div class="rpd-kpi-foot">
+                        @if (Model.SessionsChangePercent.HasValue)
+                        {
+                            var up = Model.SessionsChangePercent.Value >= 0;
+                            <span class="rpd-delta"><i class="@(up ? "ri-arrow-up-line" : "ri-arrow-down-line")" aria-hidden="true"></i>@(up ? "Up" : "Down") @Math.Abs(Model.SessionsChangePercent.Value)%</span>
+                            <span> vs. prior 7 days (@Model.SessionsPrior7Days)</span>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card custom-card rpd-kpi">
+            <div class="card-body">
+                <span class="rpd-kpi-icon bg-info-transparent"><i class="ri-time-line" aria-hidden="true"></i></span>
+                <div>
+                    <div class="rpd-kpi-label">Time in Reflect, last 7 days</div>
+                    <div class="rpd-kpi-value">@Model.MinutesLast7Days<small>min</small></div>
+                    <div class="rpd-kpi-foot">@Model.ActivePatientsLast7Days of @Model.ActivePatients active patients used Reflect</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card custom-card rpd-kpi">
+            <div class="card-body">
+                <span class="rpd-kpi-icon bg-warning-transparent"><i class="ri-alarm-warning-line" aria-hidden="true"></i></span>
+                <div>
+                    <div class="rpd-kpi-label">Patients flagged</div>
+                    <div class="rpd-kpi-value">@Model.NeedsAttentionCount</div>
+                    <div class="rpd-kpi-foot">Inactivity, symptom change, mood, or billing</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card custom-card rpd-kpi">
+            <div class="card-body">
+                <span class="rpd-kpi-icon bg-primary-transparent"><i class="ri-timer-line" aria-hidden="true"></i></span>
+                <div>
+                    <div class="rpd-kpi-label">RTM patients at 20+ minutes</div>
+                    <div class="rpd-kpi-value">@Model.PatientsAtOrAbove20Minutes<small>of @Model.RtmEnrolledPatients</small></div>
+                    <div class="rpd-kpi-foot">@Model.PeriodLabel · @Model.PeriodDaysLeft days left</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-xl-7">
+        <div class="card custom-card">
+            <div class="card-header">
+                <div>
+                    <div class="card-title">Caseload engagement</div>
+                    <div class="text-muted fs-12">Minutes per week across all patients, last @Reflect.Web.Models.ViewModels.Provider.Dashboard.DashboardIndexViewModel.ChartWeeks weeks</div>
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rpd-legend" aria-hidden="true">
+                        <span class="rpd-legend-item"><span class="rpd-swatch rpd-swatch-xr"></span>Reflect XR</span>
+                        <span class="rpd-legend-item"><span class="rpd-swatch rpd-swatch-mobile"></span>Reflect Mobile</span>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary rpd-table-toggle" id="weeklyTableBtn" aria-pressed="false"><i class="ri-table-line me-1" aria-hidden="true"></i><span class="js-toggle-label">Table</span></button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="rpd-chart" id="weeklyChartWrap"><canvas id="weeklyChart" role="img" aria-label="Stacked weekly minutes in Reflect XR and Reflect Mobile across the caseload. Use the Table button for values."></canvas></div>
+                <div class="rpd-chart-table" id="weeklyTable"></div>
+            </div>
+        </div>
+        <div class="card custom-card">
+            <div class="card-header">
+                <div>
+                    <div class="card-title">RTM progress, @Model.PeriodLabel</div>
+                    <div class="text-muted fs-12">Remote data days (16 needed) and treatment-management minutes (20 for 98980)</div>
+                </div>
+                <a class="btn btn-sm btn-primary-light" href="@Url.Action("Index", "Billing")">Billing details</a>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered text-nowrap align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th scope="col">Patient</th>
+                                <th scope="col">Data days</th>
+                                <th scope="col">Minutes</th>
+                                <th scope="col">Contact</th>
+                                <th scope="col">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in Model.RtmRows.Take(8))
+                            {
+                                <tr>
+                                    <td><a class="rpd-patient-link" href="@Url.Action("Details", "Patients", new { id = row.PatientId, tab = "monitoring" })">@row.PatientName</a></td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="rpd-mini-meter" aria-hidden="true"><span class="@(row.DataDays >= row.DataDaysRequired ? "is-done" : string.Empty)" style="width: @(row.DataDaysPercent)%"></span></div>
+                                            <span class="fs-12">@row.DataDays/@row.DataDaysRequired</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <div class="rpd-mini-meter" aria-hidden="true"><span class="@(row.TreatmentMinutes >= 20 ? "is-done" : string.Empty)" style="width: @(row.MinutesPercent)%"></span></div>
+                                            <span class="fs-12">@row.TreatmentMinutes min</span>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        @if (row.HasInteractive)
+                                        {
+                                            <span class="fs-12"><i class="ri-checkbox-circle-line text-success me-1" aria-hidden="true"></i>Logged</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="fs-12"><i class="ri-close-circle-line text-warning me-1" aria-hidden="true"></i>Needed</span>
+                                        }
+                                    </td>
+                                    <td><partial name="_StatusBadge" model="row.Status" /></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-5">
+        <div class="card custom-card">
+            <div class="card-header">
+                <div>
+                    <div class="card-title">Needs attention</div>
+                    <div class="text-muted fs-12">Sorted by urgency</div>
+                </div>
+                <a class="btn btn-sm btn-primary-light" href="@Url.Action("Index", "Patients", new { filter = "attention" })">View all</a>
+            </div>
+            <div class="card-body">
+                @if (Model.AttentionRows.Count == 0)
+                {
+                    <div class="rpd-empty"><i class="ri-checkbox-circle-line" aria-hidden="true"></i>No patients are flagged right now.</div>
+                }
+                else
+                {
+                    foreach (var row in Model.AttentionRows.Take(6))
+                    {
+                        <div class="rpd-attention-item">
+                            <span class="avatar avatar-sm avatar-rounded rpd-avatar">@row.Initials</span>
+                            <div class="flex-grow-1 min-w-0">
+                                <div class="d-flex flex-wrap align-items-center gap-2">
+                                    <a class="rpd-patient-link" href="@Url.Action("Details", "Patients", new { id = row.PatientId })">@row.PatientName</a>
+                                    <partial name="_StatusBadge" model="row.Severity" />
+                                </div>
+                                <ul class="rpd-attention-reasons">
+                                    @foreach (var item in row.Items)
+                                    {
+                                        <li><i class="@item.Icon" aria-hidden="true"></i><span><strong class="fw-semibold">@item.Title.</strong> @item.Detail</span></li>
+                                    }
+                                </ul>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+        <div class="card custom-card">
+            <div class="card-header">
+                <div>
+                    <div class="card-title">Modules used, last 30 days</div>
+                    <div class="text-muted fs-12">Total minutes by module</div>
+                </div>
+                <div class="d-flex align-items-center gap-3">
+                    <div class="rpd-legend" aria-hidden="true">
+                        <span class="rpd-legend-item"><span class="rpd-swatch rpd-swatch-xr"></span>XR</span>
+                        <span class="rpd-legend-item"><span class="rpd-swatch rpd-swatch-mobile"></span>Mobile</span>
+                    </div>
+                    <button type="button" class="btn btn-sm btn-outline-secondary rpd-table-toggle" id="moduleTableBtn" aria-pressed="false"><i class="ri-table-line me-1" aria-hidden="true"></i><span class="js-toggle-label">Table</span></button>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="rpd-chart" id="moduleChartWrap"><canvas id="moduleChart" role="img" aria-label="Minutes per module over the last 30 days, colored by platform. Use the Table button for values."></canvas></div>
+                <div class="rpd-chart-table" id="moduleTable"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card custom-card">
+    <div class="card-header">
+        <div>
+            <div class="card-title">Latest patient activity</div>
+            <div class="text-muted fs-12">Most recent sessions across your caseload</div>
+        </div>
+    </div>
+    <div class="card-body">
+        <ul class="rpd-feed row row-cols-1 row-cols-lg-2 g-0">
+            @foreach (var s in Model.RecentSessions)
+            {
+                <li class="col pe-lg-4">
+                    <span class="rpd-feed-icon"><i class="@s.ModuleIcon" aria-hidden="true"></i></span>
+                    <div class="min-w-0 flex-grow-1">
+                        <div><a class="rpd-patient-link" href="@Url.Action("Details", "Patients", new { id = s.PatientId })">@s.PatientName</a> <span class="text-muted">· @s.ModuleName</span></div>
+                        <div class="text-muted fs-12"><i class="@s.PlatformIcon me-1" aria-hidden="true"></i>@s.PlatformName · @s.Minutes min · @s.When</div>
+                    </div>
+                    @if (s.MoodChange.HasValue)
+                    {
+                        var mc = s.MoodChange.Value;
+                        <span class="badge @(mc > 0 ? "bg-success-transparent text-success" : mc < 0 ? "bg-warning-transparent text-warning" : "bg-info-transparent text-info")" title="Mood change after session">
+                            <i class="@(mc > 0 ? "ri-arrow-up-line" : mc < 0 ? "ri-arrow-down-line" : "ri-subtract-line") me-1" aria-hidden="true"></i>Mood @(mc > 0 ? "+" : string.Empty)@mc
+                        </span>
+                    }
+                </li>
+            }
+        </ul>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ChartScripts" />
+    <script src="~/js/controllers/provider/dashboardController.js" asp-append-version="true"></script>
+    <script nonce="@Context.GetCspNonce()">
+        ProviderDashboardController.init({
+            weekly: @Json.Serialize(Model.WeeklyChart),
+            modules: @Json.Serialize(Model.ModuleChart)
+        });
+    </script>
+}

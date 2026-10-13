@@ -1,0 +1,180 @@
+@model Reflect.Web.Models.ViewModels.Provider.Billing.BillingIndexViewModel
+@{
+    ViewData["Title"] = "RTM billing";
+}
+@section Styles {
+    <partial name="_ProviderStyles" />
+}
+
+<div class="rpd-page-header">
+    <div>
+        <h1 class="page-title mb-1">RTM billing</h1>
+        <p class="text-muted fs-13 mb-0">
+            Remote Therapeutic Monitoring for @Model.Period.Label.
+            @if (Model.IsCurrentPeriod) { <span>@Model.DaysLeft days left in this period.</span> } else { <span>This period is closed.</span> }
+        </p>
+    </div>
+    <div class="page-actions">
+        <form method="get" class="d-flex align-items-center gap-2">
+            <label for="period" class="visually-hidden">Billing period</label>
+            <select id="period" name="period" class="form-select js-auto-submit-select">
+                @foreach (var o in Model.PeriodOptions)
+                {
+                    <option value="@o.Key" selected="@o.Selected">@o.Label</option>
+                }
+            </select>
+        </form>
+        <a class="btn btn-primary" href="@Url.Action("Export", new { period = Model.Period.Key })"><i class="ri-download-2-line me-1" aria-hidden="true"></i>Export CSV</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-sm-6 col-xl-3">
+        <div class="card custom-card rpd-kpi"><div class="card-body">
+            <span class="rpd-kpi-icon bg-success-transparent"><i class="ri-checkbox-circle-line" aria-hidden="true"></i></span>
+            <div><div class="rpd-kpi-label">Ready to bill</div><div class="rpd-kpi-value">@Model.Ready<small>of @Model.Enrolled</small></div><div class="rpd-kpi-foot">16+ data days and 20+ minutes with contact</div></div>
+        </div></div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card custom-card rpd-kpi"><div class="card-body">
+            <span class="rpd-kpi-icon bg-info-transparent"><i class="ri-loader-2-line" aria-hidden="true"></i></span>
+            <div><div class="rpd-kpi-label">@(Model.IsCurrentPeriod ? "On track or partial" : "Partially billable")</div><div class="rpd-kpi-value">@Model.PartialOrOnTrack</div><div class="rpd-kpi-foot">Some codes met, or still reachable</div></div>
+        </div></div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card custom-card rpd-kpi"><div class="card-body">
+            <span class="rpd-kpi-icon bg-warning-transparent"><i class="ri-error-warning-line" aria-hidden="true"></i></span>
+            <div><div class="rpd-kpi-label">Behind pace or at risk</div><div class="rpd-kpi-value">@Model.AtRiskOrNotBillable</div><div class="rpd-kpi-foot">16 data days unlikely or impossible</div></div>
+        </div></div>
+    </div>
+    <div class="col-sm-6 col-xl-3">
+        <div class="card custom-card rpd-kpi"><div class="card-body">
+            <span class="rpd-kpi-icon bg-primary-transparent"><i class="ri-timer-line" aria-hidden="true"></i></span>
+            <div><div class="rpd-kpi-label">Treatment-management time</div><div class="rpd-kpi-value">@StatusDisplay.FormatMinutes(Model.TotalTreatmentMinutes)</div><div class="rpd-kpi-foot">Monitoring plus interactive contact</div></div>
+        </div></div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card custom-card">
+            <div class="card-header">
+                <div>
+                    <div class="card-title">Patients</div>
+                    <div class="text-muted fs-12">Sorted so the patients who need action come first</div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered text-nowrap align-middle dt-client w-100" data-page-length="25">
+                        <thead>
+                            <tr>
+                                <th scope="col">Patient</th>
+                                <th scope="col">Status</th>
+                                <th scope="col">Data days</th>
+                                <th scope="col">Minutes</th>
+                                <th scope="col">Contact</th>
+                                <th scope="col">Codes</th>
+                                <th scope="col">Open items</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var r in Model.Rows)
+                            {
+                                <tr>
+                                    <td data-order="@r.PatientName">
+                                        <a class="rpd-patient-link" href="@Url.Action("Details", "Patients", new { id = r.PatientId, tab = "monitoring" })">@r.PatientName</a>
+                                        <div class="text-muted fs-12">@r.ChartNumber</div>
+                                    </td>
+                                    <td data-order="@r.SortOrder"><partial name="_StatusBadge" model="r.Status" /></td>
+                                    <td data-order="@r.DataDays">
+                                        @if (r.Enrolled)
+                                        {
+                                            <div class="d-flex align-items-center gap-2">
+                                                <div class="rpd-mini-meter" aria-hidden="true"><span class="@(r.DataDays >= r.DataDaysRequired ? "is-done" : string.Empty)" style="width: @(Math.Min(100, r.DataDays * 100 / r.DataDaysRequired))%"></span></div>
+                                                <span class="fs-12">@r.DataDays/@r.DataDaysRequired</span>
+                                            </div>
+                                        }
+                                        else { <span class="text-muted">-</span> }
+                                    </td>
+                                    <td data-order="@r.TreatmentMinutes">
+                                        @if (r.Enrolled)
+                                        {
+                                            <span class="fw-semibold">@r.TreatmentMinutes</span>
+                                            <div class="text-muted fs-12">@r.MonitoringMinutes review + @r.InteractiveMinutes contact</div>
+                                        }
+                                        else { <span class="text-muted">-</span> }
+                                    </td>
+                                    <td data-order="@(r.HasInteractive ? 1 : 0)">
+                                        @if (!r.Enrolled) { <span class="text-muted">-</span> }
+                                        else if (r.HasInteractive) { <span class="fs-12"><i class="ri-checkbox-circle-line text-success me-1" aria-hidden="true"></i>Logged</span> }
+                                        else if (Model.IsCurrentPeriod) { <a class="fs-12" href="@Url.Action("Create", "Communications", new { patientId = r.PatientId })"><i class="ri-error-warning-line text-warning me-1" aria-hidden="true"></i>Log contact</a> }
+                                        else { <span class="fs-12"><i class="ri-close-circle-line text-warning me-1" aria-hidden="true"></i>None</span> }
+                                    </td>
+                                    <td>
+                                        <div class="d-flex flex-wrap gap-1" style="max-width: 15rem;">
+                                            @foreach (var c in r.Codes)
+                                            {
+                                                <span class="rpd-code" title="@c.Description">@c.Code@if (c.Units > 1) {<span class="rpd-code-units">× @c.Units</span>}</span>
+                                            }
+                                            @if (r.Codes.Count == 0) { <span class="text-muted">None</span> }
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <ul class="rpd-blockers rpd-wrap">
+                                            @foreach (var b in r.Blockers)
+                                            {
+                                                <li><i class="ri-arrow-right-s-line" aria-hidden="true"></i>@b</li>
+                                            }
+                                            @if (r.Blockers.Count == 0) { <li><i class="ri-check-line" aria-hidden="true"></i>Nothing open</li> }
+                                        </ul>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-xl-5">
+        <div class="card custom-card">
+            <div class="card-header"><div class="card-title">Code summary</div></div>
+            <div class="card-body">
+                @if (Model.CodeTotals.Count == 0)
+                {
+                    <div class="rpd-empty py-3"><i class="ri-file-list-3-line" aria-hidden="true"></i>No codes met yet.</div>
+                }
+                else
+                {
+                    <ul class="list-unstyled mb-0">
+                        @foreach (var c in Model.CodeTotals)
+                        {
+                            <li class="d-flex align-items-start gap-2 py-2 border-bottom">
+                                <span class="rpd-code">@c.Code</span>
+                                <span class="flex-grow-1 fs-13">@c.Description</span>
+                                <span class="fw-semibold text-nowrap">@c.Units unit@(c.Units == 1 ? string.Empty : "s")</span>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-7">
+        <div class="card custom-card">
+            <div class="card-header"><div class="card-title">How codes are worked out</div></div>
+            <div class="card-body fs-13">
+                <ul class="rpd-insights">
+                    <li><i class="ri-calendar-check-line" aria-hidden="true"></i><span><strong>Data days</strong> are days with at least one <em>remote</em> Reflect session. In-clinic sessions don't count. 16+ days: 98978. 2-15 days: 98986.</span></li>
+                    <li><i class="ri-timer-line" aria-hidden="true"></i><span><strong>Treatment management</strong> is your review time plus interactive contact time. 10-19 min: 98979. 20 min: 98980. Each further 20 min: 98981.</span></li>
+                    <li><i class="ri-phone-line" aria-hidden="true"></i><span>Treatment-management codes need at least one <strong>video or phone</strong> contact in the month.</span></li>
+                    <li><i class="ri-user-add-line" aria-hidden="true"></i><span><strong>98975</strong> (set-up and education) applies once, in the month the patient consents.</span></li>
+                </ul>
+                <div class="rpd-disclaimer mt-3"><i class="ri-information-line" aria-hidden="true"></i><span>Decision support only. Payer rules vary; confirm with your billing team. The rules live in one class (RtmBillingRules) so they're easy to update.</span></div>
+            </div>
+        </div>
+    </div>
+</div>

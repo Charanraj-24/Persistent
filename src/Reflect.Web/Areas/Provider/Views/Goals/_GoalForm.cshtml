@@ -1,0 +1,97 @@
+@model Reflect.Web.Models.ViewModels.Provider.Goals.GoalFormViewModel
+@using Reflect.Web.Models.ViewModels.Provider.Goals
+<form method="post" class="js-loading-submit" novalidate>
+    <input type="hidden" asp-for="Id" />
+    <input type="hidden" asp-for="PatientId" />
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+
+    <div class="card custom-card">
+        <div class="card-header"><div class="card-title">Goal</div></div>
+        <div class="card-body">
+            @if (!Model.IsEdit)
+            {
+                <div class="mb-3">
+                    <span class="form-label d-block">Start from a common goal</span>
+                    <div class="d-flex flex-wrap gap-2">
+                        @foreach (var t in GoalFormViewModel.Templates)
+                        {
+                            <button type="button" class="btn btn-sm btn-outline-secondary rpd-template-btn js-goal-template"
+                                    data-title="@t.Title" data-measure="@t.Measure" data-unit="@t.Unit" data-direction="@t.Direction">
+                                <i class="ri-magic-line me-1" aria-hidden="true"></i>@t.Title
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+            <div class="row g-3">
+                <div class="col-md-8">
+                    <label asp-for="Title" class="form-label"></label>
+                    <input asp-for="Title" class="form-control" />
+                    <span asp-validation-for="Title" class="text-danger fs-12"></span>
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="Status" class="form-label"></label>
+                    <select asp-for="Status" class="form-select">
+                        <option value="Active">Active</option>
+                        <option value="OnHold">On hold</option>
+                        <option value="Achieved">Achieved</option>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <label asp-for="Description" class="form-label"></label>
+                    <textarea asp-for="Description" class="form-control" rows="3" placeholder="What the patient is working toward, in their words if possible."></textarea>
+                    <span asp-validation-for="Description" class="text-danger fs-12"></span>
+                </div>
+            </div>
+
+            <h2 class="rpd-form-section-title mt-4">How progress is measured</h2>
+            <div class="row g-3">
+                <div class="col-md-5">
+                    <label asp-for="MeasureName" class="form-label"></label>
+                    <input asp-for="MeasureName" class="form-control" placeholder="For example, PHQ-9 score" />
+                    <span asp-validation-for="MeasureName" class="text-danger fs-12"></span>
+                </div>
+                <div class="col-md-3">
+                    <label asp-for="Unit" class="form-label"></label>
+                    <input asp-for="Unit" class="form-control" placeholder="points" />
+                </div>
+                <div class="col-md-4">
+                    <label asp-for="Direction" class="form-label"></label>
+                    <select asp-for="Direction" class="form-select">
+                        <option value="Decrease">Down (lower is better)</option>
+                        <option value="Increase">Up (higher is better)</option>
+                    </select>
+                </div>
+                <div class="col-sm-4">
+                    <label asp-for="BaselineValue" class="form-label"></label>
+                    <input asp-for="BaselineValue" class="form-control" type="number" step="0.1" min="0" />
+                    <span asp-validation-for="BaselineValue" class="text-danger fs-12"></span>
+                </div>
+                <div class="col-sm-4">
+                    <label asp-for="CurrentValue" class="form-label"></label>
+                    <input asp-for="CurrentValue" class="form-control" type="number" step="0.1" min="0" />
+                    <span asp-validation-for="CurrentValue" class="text-danger fs-12"></span>
+                </div>
+                <div class="col-sm-4">
+                    <label asp-for="TargetValue" class="form-label"></label>
+                    <input asp-for="TargetValue" class="form-control" type="number" step="0.1" min="0" />
+                    <span asp-validation-for="TargetValue" class="text-danger fs-12"></span>
+                </div>
+                <div class="col-sm-6">
+                    <label asp-for="StartDate" class="form-label"></label>
+                    <input asp-for="StartDate" class="form-control js-date" type="text" value="@Model.StartDate?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)" />
+                    <span asp-validation-for="StartDate" class="text-danger fs-12"></span>
+                </div>
+                <div class="col-sm-6">
+                    <label asp-for="TargetDate" class="form-label"></label>
+                    <input asp-for="TargetDate" class="form-control js-date" type="text" value="@Model.TargetDate?.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture)" />
+                    <span asp-validation-for="TargetDate" class="text-danger fs-12"></span>
+                </div>
+            </div>
+        </div>
+        <div class="card-footer d-flex flex-wrap gap-2 justify-content-end page-actions">
+            <a class="btn btn-outline-secondary" href="@Url.Action("Details", "Patients", new { id = Model.PatientId, tab = "goals" })">Cancel</a>
+            <button type="submit" class="btn btn-primary"><i class="ri-save-line me-1" aria-hidden="true"></i>@(Model.IsEdit ? "Save changes" : "Add goal")</button>
+        </div>
+    </div>
+</form>
