@@ -68,3 +68,11 @@ public interface IAccessAuditRepository
     Task<List<AccessAuditEntry>> GetRecentAsync(DateTimeOffset fromUtc, int take, CancellationToken ct);
     Task<List<AccessAuditEntry>> GetForClientAsync(Guid clientId, int take, CancellationToken ct);
 }
+
+public interface IClientNoteRepository
+{
+    Task<List<ClientNote>> GetForClientAsync(Guid providerClientId, CancellationToken ct);
+    Task<ClientNote> GetAsync(Guid id, CancellationToken ct);
+    Task AddAsync(ClientNote note, CancellationToken ct);
+    Task UpdateAsync(ClientNote note, CancellationToken ct);
+}

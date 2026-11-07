@@ -84,6 +84,7 @@ builder.Services.AddScoped<IObservationRepository, InMemoryObservationRepository
 builder.Services.AddScoped<IRtmTimeEntryRepository, InMemoryRtmTimeEntryRepository>();
 builder.Services.AddScoped<IIngestEventRepository, InMemoryIngestEventRepository>();
 builder.Services.AddScoped<IAccessAuditRepository, InMemoryAccessAuditRepository>();
+builder.Services.AddScoped<IClientNoteRepository, InMemoryClientNoteRepository>();
 builder.Services.AddScoped<Reflect.Web.Services.Audit.AuditLogger>();
 builder.Services.AddSingleton<Reflect.Web.Services.Notifications.NotificationReadState>();
 builder.Services.AddSingleton<Reflect.Web.Services.CheckIn.PhoneCheckInService>(); // DEMO: QR audience check-in
@@ -125,6 +126,18 @@ if (!app.Environment.IsDevelopment())
 
 app.UseReflectCsp(app.Configuration.GetValue("Csp:StrictScripts", false));
 app.UseStaticFiles();
+// Pages and data responses are never stored by the browser: no client data left in the browser cache,
+// and the Back button asks the server again instead of showing an old copy.
+app.Use(async (ctx, next) =>
+{
+    ctx.Response.OnStarting(() =>
+    {
+        ctx.Response.Headers.CacheControl = "no-store, max-age=0";
+        ctx.Response.Headers.Pragma = "no-cache";
+        return Task.CompletedTask;
+    });
+    await next();
+});
 app.UseRouting();
 app.UseAuthentication();
 app.UseAuthorization();

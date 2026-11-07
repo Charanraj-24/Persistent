@@ -1,5 +1,6 @@
 // DEMO ONLY: generates realistic, fully synthetic data relative to "today", so the demo always looks current.
 // No real patient or personal data. Names, MRNs and NPIs are invented.
+using Reflect.Domain.Helpers;
 using Reflect.Domain.Entities.ProviderDashboard;
 using Reflect.Domain.ProviderDashboard;
 using Reflect.Domain.ProviderDashboard.Rtm;
@@ -117,6 +118,41 @@ public static class SyntheticDataSeeder
         foreach (var p in EllisonClients) SeedClient(store, ellison, p, index++, today, nowUtc);
         foreach (var p in ReyesClients) SeedClient(store, reyes, p, index++, today, nowUtc);
         SeedAuditHistory(store, ellison, reyes, today, nowUtc);
+        SeedNotes(store, today, nowUtc);
+    }
+
+    /// <summary>A few provider notes so the Notes tab isn't empty on first run.</summary>
+    private static void SeedNotes(InMemoryProviderDashboardStore store, DateOnly today, DateTimeOffset nowUtc)
+    {
+        var author = DemoUsers.ProviderEllison;
+        void Note(string first, string last, int daysAgo, NoteTopic topic, string body, bool pinned = false)
+        {
+            var c = store.Clients.FirstOrDefault(x => x.FirstName == first && x.LastName == last);
+            if (c == null) return;
+            var at = EasternTime.AtLocal(today.AddDays(-daysAgo), new TimeOnly(15, 30));
+            Guid? subject = null; var label = string.Empty;
+            if (topic == NoteTopic.Session)
+            {
+                var s = store.Sessions.Where(x => x.ClientUserId == c.ClientUserId && x.StartedAt < at).OrderByDescending(x => x.StartedAt).FirstOrDefault();
+                if (s != null) { subject = s.Id; label = $"{ModuleCatalog.Get(s.ModuleKey).Name}, {s.StartedAt.ToUsDateTimeString()}"; }
+            }
+            if (topic == NoteTopic.Assessment)
+            {
+                var a = store.Assessments.Where(x => x.ClientUserId == c.ClientUserId && x.CompletedAt < at).OrderByDescending(x => x.CompletedAt).FirstOrDefault();
+                if (a != null) { subject = a.Id; label = $"{(a.Instrument == AssessmentInstrument.Phq9 ? "PHQ-9" : "GAD-7")} {a.TotalScore}, {a.CompletedAt.ToUsDateString()}"; }
+            }
+            store.Notes.Add(new ClientNote
+            {
+                ProviderClientId = c.Id, AuthorUserId = author.UserId, AuthorName = author.DisplayName, Body = body, Topic = topic,
+                SubjectId = subject, SubjectLabel = label, IsPinned = pinned, DateCreated = at
+            });
+        }
+        Note("Imani", "Brooks", 9, NoteTopic.General, "Goal for this month: use Self Compassion after hard days at work instead of scrolling. Agreed to try 3 times a week.", pinned: true);
+        Note("Imani", "Brooks", 4, NoteTopic.Session, "Said this session helped her name the feeling as disappointment, not failure. Revisit next visit.");
+        Note("Imani", "Brooks", 2, NoteTopic.Assessment, "Big drop since baseline. Credits evening routine and the Hope Tree module. Keep current plan.");
+        Note("Elena", "Ruiz", 1, NoteTopic.Safety, "Safety plan reviewed by phone. Crisis line saved in phone, sister aware. Check in again within 48 hours.", pinned: true);
+        Note("Elena", "Ruiz", 3, NoteTopic.General, "Reports poor sleep, often awake 1 to 3 AM. Using Floating Bubbles in bed. Discuss sleep hygiene.");
+        Note("Daniel", "Kim", 2, NoteTopic.General, "New to VR. Felt dizzy first time. Show him the Training Tutorial at next visit.");
     }
 
     /// <summary>A plausible week of access events so the audit log has history on first run.</summary>

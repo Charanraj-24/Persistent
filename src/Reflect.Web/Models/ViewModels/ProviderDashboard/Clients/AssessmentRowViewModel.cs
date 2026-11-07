@@ -10,6 +10,7 @@ namespace Reflect.Web.Models.ViewModels.ProviderDashboard.Clients;
 
 public class AssessmentRowViewModel
 {
+    public Guid Id { get; set; }
     public string Date { get; set; } = string.Empty;
     public long DateSort { get; set; }
     public string Instrument { get; set; } = string.Empty;
@@ -24,6 +25,7 @@ public class AssessmentRowViewModel
         var delta = previous == null ? (int?)null : a.TotalScore - previous.TotalScore;
         return new AssessmentRowViewModel
         {
+            Id = a.Id,
             Date = a.CompletedAt.ToUsDateString(),
             DateSort = a.CompletedAt.ToUnixTimeSeconds(),
             Instrument = AssessmentScoring.Name(a.Instrument),

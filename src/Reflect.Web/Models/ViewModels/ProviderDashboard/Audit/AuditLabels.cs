@@ -19,6 +19,9 @@ public static class AuditLabels
         AuditAction.AskAssistant => "Asked AI assistant",
         AuditAction.DraftNote => "Drafted RTM note",
         AuditAction.ViewBilling => "Viewed billing",
+        AuditAction.AddNote => "Added a note",
+        AuditAction.EditNote => "Edited a note",
+        AuditAction.DeleteNote => "Deleted a note",
         _ => a.ToString()
     };
 
@@ -30,6 +33,7 @@ public static class AuditLabels
         AuditAction.AskAssistant or AuditAction.DraftNote => "ri-sparkling-2-line",
         AuditAction.LogTime or AuditAction.AttestReviewTime => "ri-timer-line",
         AuditAction.ViewBilling => "ri-money-dollar-box-line",
+        AuditAction.AddNote or AuditAction.EditNote or AuditAction.DeleteNote => "ri-sticky-note-line",
         _ => "ri-eye-line"
     };
 

@@ -31,6 +31,7 @@
         }
         <a class="btn btn-primary" asp-action="Prep" asp-route-id="@Model.ClientId"><i class="ri-clipboard-line me-1" aria-hidden="true"></i>Prep for session</a>
         <a class="btn btn-outline-secondary" asp-controller="TimeEntries" asp-action="Create" asp-route-clientId="@Model.ClientId" asp-route-activity="@((int)RtmActivityType.InteractiveCommunication)"><i class="ri-video-chat-line me-1" aria-hidden="true"></i>Log live interaction</a>
+        <button type="button" class="btn btn-outline-secondary js-add-note" data-topic="0"><i class="ri-sticky-note-add-line me-1" aria-hidden="true"></i>Add note</button>
         <partial name="_AssistantHint" />
         <a class="btn btn-outline-secondary" asp-controller="Reports" asp-action="ClientSummary" asp-route-id="@Model.ClientId"><i class="ri-printer-line me-1" aria-hidden="true"></i>RTM documentation</a>
     </div>
@@ -44,6 +45,9 @@
 
 <div id="clientStatusStrip" data-refresh-url="@Url.Action("Status", "Clients", new { id = Model.ClientId })">
     <partial name="_StatusStrip" model="Model" />
+</div>
+<div id="clientActivity" data-refresh-url="@Url.Action("Activity", "Clients", new { id = Model.ClientId })" aria-live="polite">
+    <div class="card custom-card"><div class="card-body text-muted fs-13">Loading the latest Reflect activity...</div></div>
 </div>
 
 <ul class="nav nav-tabs" id="clientTabs" role="tablist">
@@ -67,6 +71,7 @@
     }
 </div>
 
+<partial name="_NoteModal" model="Model.ClientId" />
 <partial name="_AssistantPanel" model='Reflect.Web.Models.ViewModels.ProviderDashboard.Assistant.AssistantPanelViewModel.ForClient(Model.ClientId, Model.Name, AssistantSettings.Value.IsConfigured, AssistantSettings.Value.Model)' />
 
 <form id="antiForgeryForm" class="d-none" method="post">@Html.AntiForgeryToken()</form>
@@ -80,6 +85,8 @@
     <script src="~/js/shared/provider/reviewTimer.js" asp-append-version="true"></script>
     <script src="~/js/services/provider/clientDetailsService.js" asp-append-version="true"></script>
     <script src="~/js/controllers/provider/clientDetailsController.js" asp-append-version="true"></script>
+    <script src="~/js/services/provider/notesService.js" asp-append-version="true"></script>
+    <script src="~/js/controllers/provider/notesController.js" asp-append-version="true"></script>
     <script src="~/js/services/provider/assistantService.js" asp-append-version="true"></script>
     <script src="~/js/controllers/provider/assistantController.js" asp-append-version="true"></script>
     <script nonce="@Context.GetCspNonce()">
@@ -99,5 +106,6 @@
             }
         });
         AssistantController.init();
+        NotesController.init();
     </script>
 }

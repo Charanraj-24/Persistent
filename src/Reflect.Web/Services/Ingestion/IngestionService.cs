@@ -81,6 +81,7 @@ public class IngestionService
 
         var session = new AppSession
         {
+            Source = source,
             ClientUserId = client.ClientUserId, Platform = platform!.Value, ModuleKey = module!.Key,
             StartedAt = started, EndedAt = ended, Completed = r.Completed,
             ArtworksCreated = Math.Clamp(r.ArtworksCreated, 0, 50), ReflectionsWritten = Math.Clamp(r.ReflectionsWritten, 0, 50)
@@ -136,6 +137,7 @@ public class IngestionService
         var safety = instrument == AssessmentInstrument.Phq9 ? r.SafetyItemScore : 0;
         await _assessments.AddAsync(new AssessmentResult
         {
+            Source = source,
             ClientUserId = client.ClientUserId, Instrument = instrument.Value, TotalScore = r.TotalScore,
             SafetyItemScore = safety, CompletedAt = completed
         }, ct);
@@ -161,6 +163,7 @@ public class IngestionService
 
         await _observations.AddAsync(new Observation
         {
+            Source = source,
             ClientUserId = client.ClientUserId, Category = info.Category, Code = info.Code, Value = r.Value, Unit = info.Unit,
             EffectiveAt = effective, Context = context,
             SourceDevice = string.IsNullOrWhiteSpace(r.SourceDevice) ? "Unknown device" : r.SourceDevice.Trim()[..Math.Min(60, r.SourceDevice.Trim().Length)]

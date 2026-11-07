@@ -29,6 +29,17 @@ window.LiveDemoController = (function ($) {
             $('#liveEmpty').addClass('d-none');
         });
 
+        // Remember the chosen client and keep the "Open client" link pointing at them.
+        var $client = $('#liveClient');
+        try { var saved = window.sessionStorage.getItem('rpd-live-client'); if (saved && $client.find('option[value="' + saved + '"]').length) $client.val(saved); } catch (e) { }
+        function syncClientLink() {
+            $('.js-open-live-client').attr('href', o.clientUrlTemplate.replace('__id__', $client.val()))
+                .attr('aria-label', 'Open ' + $client.find('option:selected').text() + ' in a new tab');
+            try { window.sessionStorage.setItem('rpd-live-client', $client.val()); } catch (e) { }
+        }
+        $client.on('change', syncClientLink);
+        syncClientLink();
+
         $('.js-run-scenario').on('click', function () {
             var $btn = $(this);
             var scenario = $btn.data('scenario');

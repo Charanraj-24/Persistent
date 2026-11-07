@@ -82,6 +82,7 @@
                 </form>
             }
             <a class="btn btn-sm btn-outline-secondary" asp-controller="TimeEntries" asp-action="Create" asp-route-clientId="@Model.ClientId"><i class="ri-add-line me-1" aria-hidden="true"></i>Add time</a>
+            <button type="button" class="btn btn-sm btn-outline-secondary js-add-note" data-topic="4" data-topic-label="RTM and billing" data-subject-label="@Model.MonthLabel"><i class="ri-chat-new-line me-1" aria-hidden="true"></i>Billing note</button>
         </div>
     </div>
     <div class="card-body">

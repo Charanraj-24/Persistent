@@ -12,6 +12,8 @@ namespace Reflect.Web.Models.ViewModels.ProviderDashboard.Clients.Tabs;
 /// <summary>Engagement tab: module mix, 12-week trend, time-of-day and weekday patterns, and the session log.</summary>
 public class ClientEngagementTabViewModel
 {
+    /// <summary>Note counts per session / assessment id, filled by the controller.</summary>
+    public Dictionary<Guid, int> NoteCounts { get; set; } = new();
     public EngagementSummary Summary { get; set; }
     public string TopModuleName { get; set; } = string.Empty;
     public string LastSession { get; set; } = string.Empty;

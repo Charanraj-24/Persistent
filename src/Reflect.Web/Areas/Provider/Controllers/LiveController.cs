@@ -61,7 +61,7 @@ public class LiveController : Controller
     {
         var client = await vm.PrepareDataForSave(_currentUser, _providers, _clients, ct);
         if (client == null) return BadRequest(new { ok = false, error = ProviderDashboardMessages.ScenarioUnknown });
-        var result = await DemoScenarios.RunAsync(vm.Scenario, client, _ingestion, Random.Shared, "simulator", ct);
+        var result = await DemoScenarios.RunAsync(vm.Scenario, client, _ingestion, Random.Shared, "live demo", ct);
         return result.Ok
             ? Json(new { ok = true, summary = $"{client.FullName}: {result.Summary}" })
             : BadRequest(new { ok = false, error = string.Join(" ", result.Errors) });

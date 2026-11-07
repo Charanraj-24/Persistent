@@ -14,7 +14,10 @@ public enum AuditAction
     ExportReport = 30,
     AskAssistant = 40,
     DraftNote = 41,
-    ViewBilling = 50
+    ViewBilling = 50,
+    AddNote = 60,
+    EditNote = 61,
+    DeleteNote = 62
 }
 
 /// <summary>

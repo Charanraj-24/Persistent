@@ -20,4 +20,6 @@ public class Observation : BaseEntity
     public Guid? AppSessionId { get; set; }
     /// <summary>"pre" or "post" when tied to a session; empty otherwise.</summary>
     public string Context { get; set; } = string.Empty;
+    /// <summary>How the record arrived: "api", "phone", "live demo" or "simulator". Empty for imported history.</summary>
+    public string Source { get; set; } = string.Empty;
 }

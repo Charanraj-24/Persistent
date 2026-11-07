@@ -12,6 +12,8 @@ namespace Reflect.Web.Models.ViewModels.ProviderDashboard.Clients.Tabs;
 /// <summary>Therapeutic response tab: mood and stress before/after sessions, PHQ-9/GAD-7 trend, emotion words, history table.</summary>
 public class ClientResponseTabViewModel
 {
+    /// <summary>Note counts per session / assessment id, filled by the controller.</summary>
+    public Dictionary<Guid, int> NoteCounts { get; set; } = new();
     public List<AssessmentRowViewModel> Assessments { get; set; } = new();
     public List<string> TopEmotions { get; set; } = new();
     public int PairedCheckIns { get; set; }

@@ -14,6 +14,10 @@ namespace Reflect.Web.Models.ViewModels.ProviderDashboard.Clients;
 /// <summary>Session prep: one focused screen to read in the minutes before a session. Viewing it counts as review time.</summary>
 public class ClientPrepViewModel
 {
+    /// <summary>Latest notes, pinned first (filled by the controller).</summary>
+    public List<Reflect.Web.Models.ViewModels.ProviderDashboard.Notes.NoteRowViewModel> RecentNotes { get; set; } = new();
+    public int NoteTotal { get; set; }
+
     public Guid ClientId { get; set; }
     public string Name { get; set; } = string.Empty;
     public string FirstName { get; set; } = string.Empty;

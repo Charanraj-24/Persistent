@@ -19,6 +19,7 @@ public class InMemoryProviderDashboardStore
     public List<RtmTimeEntry> TimeEntries { get; } = new();
     public List<IngestEvent> Events { get; } = new();
     public List<AccessAuditEntry> Audit { get; } = new();
+    public List<ClientNote> Notes { get; } = new();
 }
 
 public class InMemoryProviderProfileRepository : IProviderProfileRepository
@@ -257,4 +258,30 @@ public class InMemoryAccessAuditRepository : IAccessAuditRepository
         lock (_store.Sync)
             return Task.FromResult(_store.Audit.Where(e => e.ClientId == clientId).OrderByDescending(e => e.OccurredAt).Take(take).ToList());
     }
+}
+
+public class InMemoryClientNoteRepository : IClientNoteRepository
+{
+    private readonly InMemoryProviderDashboardStore _store;
+    public InMemoryClientNoteRepository(InMemoryProviderDashboardStore store) => _store = store;
+
+    public Task<List<ClientNote>> GetForClientAsync(Guid providerClientId, CancellationToken ct)
+    {
+        lock (_store.Sync)
+            return Task.FromResult(_store.Notes.Where(n => !n.IsDeleted && n.ProviderClientId == providerClientId)
+                .OrderByDescending(n => n.IsPinned).ThenByDescending(n => n.DateCreated).ToList());
+    }
+
+    public Task<ClientNote> GetAsync(Guid id, CancellationToken ct)
+    {
+        lock (_store.Sync) return Task.FromResult(_store.Notes.FirstOrDefault(n => !n.IsDeleted && n.Id == id));
+    }
+
+    public Task AddAsync(ClientNote note, CancellationToken ct)
+    {
+        lock (_store.Sync) _store.Notes.Add(note);
+        return Task.CompletedTask;
+    }
+
+    public Task UpdateAsync(ClientNote note, CancellationToken ct) => Task.CompletedTask; // same object in memory
 }

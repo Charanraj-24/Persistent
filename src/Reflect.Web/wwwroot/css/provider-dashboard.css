@@ -350,3 +350,38 @@ body.rpd-ai-lock { overflow: hidden; }
 @media (prefers-reduced-motion: reduce) { .rpd-usage .is-changed { animation: none; outline: 2px solid rgb(var(--primary-rgb)); } .rpd-usage-bar > span { transition: none; } }
 
 .rpd-usage-detail th { white-space: nowrap; }
+
+/* Rows that just received live data */
+.rpd-row-flash > td { animation: rpd-row-flash 2.5s ease-out 2; }
+@keyframes rpd-row-flash { 0% { box-shadow: inset 0 0 0 9999px rgba(var(--primary-rgb), 0.28); } 100% { box-shadow: inset 0 0 0 9999px rgba(var(--primary-rgb), 0); } }
+@media (prefers-reduced-motion: reduce) { .rpd-row-flash > td { animation: none; box-shadow: inset 0 0 0 9999px rgba(var(--primary-rgb), 0.18); } }
+
+.rpd-prep-updated .card { animation: rpd-prep-glow 2.4s ease-out; }
+@keyframes rpd-prep-glow { 0% { box-shadow: 0 0 0 0.2rem rgba(var(--primary-rgb), 0.55); } 100% { box-shadow: 0 0 0 0.2rem rgba(var(--primary-rgb), 0); } }
+@media (prefers-reduced-motion: reduce) { .rpd-prep-updated .card { animation: none; } }
+
+/* Latest from Reflect (client page) */
+li.rpd-row-flash, .card.rpd-row-flash, .rpd-statusstrip.rpd-row-flash { animation: rpd-row-flash 2.5s ease-out 2; }
+.rpd-activity-list { list-style: none; margin: 0; padding: 0; }
+.rpd-activity-list li { display: flex; gap: 0.75rem; align-items: flex-start; padding: 0.6rem 1.25rem; border-top: 1px solid var(--hairline, var(--default-border)); }
+.rpd-activity-list li:first-child { border-top: 0; }
+.rpd-activity-list li.is-new { background: rgba(var(--primary-rgb), 0.07); }
+.rpd-activity-icon { flex: 0 0 2rem; height: 2rem; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: rgba(var(--info-rgb), 0.12); }
+.rpd-activity-list li.is-urgent .rpd-activity-icon { background: rgba(var(--danger-rgb), 0.14); color: rgb(var(--danger-rgb)); }
+.rpd-activity-text { flex: 1 1 auto; min-width: 0; }
+.rpd-activity-title { display: block; font-weight: 600; font-size: 0.875rem; }
+.rpd-activity-detail { display: block; font-size: 0.75rem; color: var(--text-muted); }
+.rpd-activity-when { flex: 0 0 auto; text-align: right; font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; }
+.rpd-activity-new { display: inline-block; margin-left: 0.35rem; padding: 0 0.45rem; border-radius: 1rem; font-size: 0.6875rem; font-weight: 700; background: rgb(var(--primary-rgb)); color: #1F305E; vertical-align: 0.1em; }
+@media (prefers-reduced-motion: reduce) { li.rpd-row-flash, .card.rpd-row-flash { animation: none; } }
+
+/* Client notes */
+.rpd-notes { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.75rem; }
+.rpd-note-item { padding: 0.85rem 1rem; border: 1px solid var(--hairline, var(--default-border)); border-radius: 0.75rem; background: var(--custom-white); }
+.rpd-note-item.is-pinned { border-color: rgba(var(--primary-rgb), 0.6); background: rgba(var(--primary-rgb), 0.05); }
+.rpd-note-body { white-space: pre-wrap; font-size: 0.875rem; overflow-wrap: anywhere; }
+.rpd-note-pin { font-size: 0.6875rem; font-weight: 700; color: var(--default-text-color); }
+.rpd-note-about { font-size: 0.8125rem; font-weight: 600; padding: 0.4rem 0.6rem; border-radius: 0.5rem; background: rgba(var(--info-rgb), 0.1); }
+.rpd-note-btn { padding: 0.1rem 0.45rem; border: 1px solid var(--default-border); color: var(--text-muted); line-height: 1.4; }
+.rpd-note-btn:hover, .rpd-note-btn:focus-visible { color: var(--default-text-color); border-color: rgb(var(--primary-rgb)); }
+.rpd-note-btn.has-notes { color: var(--default-text-color); border-color: rgba(var(--primary-rgb), 0.7); background: rgba(var(--primary-rgb), 0.1); font-weight: 600; }

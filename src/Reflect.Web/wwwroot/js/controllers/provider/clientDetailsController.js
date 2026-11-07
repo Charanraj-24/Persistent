@@ -153,10 +153,45 @@ window.ClientDetailsController = (function ($) {
         });
 
         // Live data for THIS client: refresh the status strip and the open tab.
+        // "Latest from Reflect": load now, and again whenever this client's data changes. New items flash.
+        var $activity = $('#clientActivity'), seenKeys = null;
+        function loadActivity() {
+            return ClientDetailsService.loadTab($activity.attr('data-refresh-url')).then(function (html) {
+                $activity.html(html);
+                var keys = {};
+                $activity.find('li[data-key]').each(function () {
+                    var k = $(this).attr('data-key');
+                    keys[k] = true;
+                    if (seenKeys && !seenKeys[k]) $(this).addClass('rpd-row-flash');
+                });
+                seenKeys = keys;
+                window.setTimeout(function () { $activity.find('.rpd-row-flash').removeClass('rpd-row-flash'); }, 6000);
+            }, function () { });
+        }
+        loadActivity();
+
+        // Notes changed (added, edited, pinned, deleted): refresh the Notes tab and the open tab's note counts.
+        $(document).on('rpd:notes-changed', function () {
+            var $notes = $('#tab-notes');
+            if ($notes.hasClass('active')) { tabs.reload('#tab-notes'); }
+            else { $notes.data('state', ''); } // reloads next time it opens; other tabs keep their view
+        });
+
+        // Deep link to a tab, for example from session prep: /Provider/Clients/Details/{id}#notes
+        if (window.location.hash) {
+            var linked = document.querySelector('#' + options.tabsId + ' [data-bs-target="#tab-' + window.location.hash.slice(1).replace(/[^a-z]/g, '') + '"]');
+            if (linked) bootstrap.Tab.getOrCreateInstance(linked).show();
+        }
+
         $(document).on('rpd:livedata', function (evt, events) {
             if (!events.some(function (e) { return e.clientId === options.clientId; })) return;
             var $strip = $('#clientStatusStrip');
-            ClientDetailsService.loadTab($strip.attr('data-refresh-url')).then(function (html) { $strip.html(html); }, function () { });
+            ClientDetailsService.loadTab($strip.attr('data-refresh-url')).then(function (html) {
+                $strip.html(html);
+                $strip.children().first().addClass('rpd-row-flash');
+                window.setTimeout(function () { $strip.find('.rpd-row-flash').removeClass('rpd-row-flash'); }, 4000);
+            }, function () { });
+            loadActivity();
             tabs.reloadActive();
         });
         ProviderLiveFeed.start({ feedUrl: options.feedUrl });

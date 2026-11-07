@@ -9,4 +9,6 @@ public class AssessmentResult : BaseEntity
     /// <summary>PHQ-9 item 9 (thoughts of self-harm), 0-3. Always 0 for GAD-7.</summary>
     public int SafetyItemScore { get; set; }
     public DateTimeOffset CompletedAt { get; set; }
+    /// <summary>How the record arrived: "api", "phone", "live demo" or "simulator". Empty for imported history.</summary>
+    public string Source { get; set; } = string.Empty;
 }

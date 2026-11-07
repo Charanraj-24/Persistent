@@ -1,0 +1,34 @@
+@model Reflect.Web.Models.ViewModels.ProviderDashboard.Clients.ClientActivityViewModel
+<div class="card custom-card rpd-activity">
+    <div class="card-header">
+        <div class="card-title"><i class="ri-pulse-line me-1" aria-hidden="true"></i>Latest from Reflect</div>
+        <span class="text-muted fs-12">
+            @if (Model.NewCount > 0) { <span class="badge bg-primary-transparent me-1">@Model.NewCount new</span> }
+            Updates live
+        </span>
+    </div>
+    <div class="card-body p-0">
+        @if (Model.Items.Count == 0)
+        {
+            <div class="p-3 text-muted fs-13">No Reflect activity in the last 30 days.</div>
+        }
+        else
+        {
+            <ul class="rpd-activity-list" role="list">
+                @foreach (var i in Model.Items)
+                {
+                    <li class="@(i.IsNew ? "is-new" : null) @(i.IsUrgent ? "is-urgent" : null)" data-key="@i.Key">
+                        <span class="rpd-activity-icon"><i class="@i.Icon" aria-hidden="true"></i></span>
+                        <span class="rpd-activity-text">
+                            <span class="rpd-activity-title">@i.Title
+                                @if (i.IsNew) { <span class="rpd-activity-new">New</span> }
+                            </span>
+                            <span class="rpd-activity-detail">@i.Detail</span>
+                        </span>
+                        <span class="rpd-activity-when">@i.When@if (i.SourceLabel.Length > 0) {<span class="d-block">@i.SourceLabel</span>}</span>
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+</div>

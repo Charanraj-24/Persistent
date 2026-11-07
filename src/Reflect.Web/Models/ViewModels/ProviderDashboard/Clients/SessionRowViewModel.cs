@@ -10,6 +10,7 @@ namespace Reflect.Web.Models.ViewModels.ProviderDashboard.Clients;
 
 public class SessionRowViewModel
 {
+    public Guid Id { get; set; }
     public string When { get; set; } = string.Empty;
     public long WhenSort { get; set; }
     public string PlatformLabel { get; set; } = string.Empty;
@@ -28,6 +29,7 @@ public class SessionRowViewModel
         var change = pre != null && post != null ? post.MoodScore - pre.MoodScore : (int?)null;
         return new SessionRowViewModel
         {
+            Id = s.Id,
             When = s.StartedAt.ToUsDateTimeString(),
             WhenSort = s.StartedAt.ToUnixTimeSeconds(),
             PlatformLabel = s.Platform == ReflectPlatform.ReflectXR ? "Reflect XR" : "Reflect Mobile",

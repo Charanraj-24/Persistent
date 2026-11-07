@@ -19,8 +19,7 @@
 
 <div id="newDataBanner" class="rpd-flag mb-4 d-none" role="status">
     <i class="ri-broadcast-line rpd-flag-icon text-info" aria-hidden="true"></i>
-    <div class="flex-grow-1"><div class="rpd-flag-title">New client data arrived</div><div class="fs-13 js-new-data-text"></div></div>
-    <button type="button" class="btn btn-sm btn-primary js-reload-page">Refresh table</button>
+    <div class="flex-grow-1"><div class="rpd-flag-title">Table updated with new client data</div><div class="fs-13 js-new-data-text"></div></div>
 </div>
 
 <div class="card custom-card">
@@ -30,7 +29,7 @@
     </div>
     <div class="card-body">
         <div class="table-responsive">
-            <table class="table table-bordered text-nowrap align-middle dt-client w-100" data-page-length="25" data-order='[[1,"asc"],[0,"asc"]]'>
+            <table id="clientsTable" class="table table-bordered text-nowrap align-middle dt-client w-100" data-page-length="25" data-order='[[1,"asc"],[0,"asc"]]'>
                 <thead>
                     <tr>
                         <th>Client</th>
@@ -47,7 +46,7 @@
                 <tbody>
                     @foreach (var r in Model.Rows)
                     {
-                        <tr>
+                        <tr data-client-id="@r.ClientId">
                             <td data-order="@r.SortName">
                                 <div class="d-flex align-items-center gap-2">
                                     <span class="avatar avatar-sm avatar-rounded">@r.Initials</span>

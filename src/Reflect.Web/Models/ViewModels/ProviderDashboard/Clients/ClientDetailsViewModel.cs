@@ -42,6 +42,7 @@ public class ClientDetailsViewModel
         ("engagement", "Engagement", "ri-bar-chart-2-line"),
         ("response", "Therapeutic response", "ri-heart-pulse-line"),
         ("art", "Artwork", "ri-palette-line"),
+        ("notes", "Notes", "ri-sticky-note-line"),
         ("physiologic", "Physiologic (preview)", "ri-pulse-line"),
         ("rtm", "RTM & billing", "ri-money-dollar-circle-line")
     };

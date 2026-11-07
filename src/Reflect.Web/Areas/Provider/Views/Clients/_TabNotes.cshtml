@@ -1,0 +1,61 @@
+@model Reflect.Web.Models.ViewModels.ProviderDashboard.Notes.ClientNotesViewModel
+@using Reflect.Web.Models.ViewModels.ProviderDashboard.Notes
+@using Reflect.Domain.Entities.ProviderDashboard
+
+<div class="row">
+    <div class="col-12 col-xl-4">
+        <div class="card custom-card">
+            <div class="card-header"><div class="card-title"><i class="ri-sticky-note-add-line me-1" aria-hidden="true"></i>Add a note</div></div>
+            <div class="card-body">
+                <form class="js-note-inline" autocomplete="off" novalidate>
+                    <label for="noteInlineBody" class="form-label">Note about @Model.ClientFirstName</label>
+                    <textarea id="noteInlineBody" class="form-control mb-2" rows="5" maxlength="@ClientNote.MaxLength" placeholder="What you noticed, agreed or want to follow up on"></textarea>
+                    <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+                        <label for="noteInlineTopic" class="visually-hidden">Topic</label>
+                        <select id="noteInlineTopic" class="form-select form-select-sm w-auto">
+                            @foreach (var t in NoteTopics.Pickable) { <option value="@((int)t)">@NoteTopics.Label(t)</option> }
+                        </select>
+                        <div class="form-check mb-0">
+                            <input class="form-check-input" type="checkbox" id="noteInlinePin" />
+                            <label class="form-check-label fs-13" for="noteInlinePin">Pin to top</label>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100"><i class="ri-save-3-line me-1" aria-hidden="true"></i>Save note</button>
+                </form>
+                <p class="rpd-note mt-3 mb-0">Notes are visible to providers who can open this client, never to the Facility Admin, and are not sent to the AI. To note something about one session, questionnaire or piece of artwork, use the note button next to it.</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-xl-8">
+        <div class="card custom-card">
+            <div class="card-header">
+                <div class="card-title">Notes (@Model.Notes.Count)</div>
+                @if (Model.TopicCounts.Count > 1)
+                {
+                    <div class="d-flex flex-wrap gap-1" role="group" aria-label="Filter notes by topic">
+                        <button type="button" class="btn btn-sm btn-outline-secondary active js-note-filter" data-topic="" aria-pressed="true">All</button>
+                        @foreach (var tc in Model.TopicCounts)
+                        {
+                            <button type="button" class="btn btn-sm btn-outline-secondary js-note-filter" data-topic="@((int)tc.Topic)" aria-pressed="false">@tc.Label (@tc.Count)</button>
+                        }
+                    </div>
+                }
+            </div>
+            <div class="card-body">
+                @if (Model.Notes.Count == 0)
+                {
+                    <div class="rpd-empty"><i class="ri-sticky-note-line" aria-hidden="true"></i><div class="fw-semibold mb-1">No notes yet</div><div class="fs-13">Notes you add here, or next to a session, questionnaire or artwork, show up in this list.</div></div>
+                }
+                else
+                {
+                    <ul class="rpd-notes" role="list">
+                        @foreach (var n in Model.Notes)
+                        {
+                            <partial name="_NoteItem" model="n" />
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+    </div>
+</div>

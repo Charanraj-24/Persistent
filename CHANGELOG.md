@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.9.0 - 2026-11-07
+- Client page: "Latest from Reflect" card with the newest sessions, questionnaires and readings. Items that arrived
+  live in the last 30 minutes are marked New with their source (Live demo, Audience phone, Reflect app, Simulator)
+  and flash; the card and the RTM status strip refresh within about 5 seconds of new data.
+- Records now carry their ingestion source. Live demo events are labeled "live demo" instead of "simulator".
+- Live data demo: an "Open client" link for the chosen client, and the choice is remembered.
+- Client notes: Notes tab (add, filter by topic, pin, edit, delete, author only), an "Add note" button on the client
+  page and session prep, note buttons with counts on each session, questionnaire and artwork, and a billing note on
+  the RTM tab. Notes are visible to providers who can open the client, never to the Facility Admin, never sent to the
+  AI, soft-deleted, and adding, editing and deleting is audited (without the text). Session prep shows the latest 3.
+
 ## 0.8.0 - 2026-11-06
 - Official module catalog from PTI's Reflect Product Catalog (9/9/2026): 14 Reflect Mobile modules in 4 groups and
   17 Reflect XR modules in 5 programs, including the Training Tutorial. Synthetic data, live demo, phone check-in

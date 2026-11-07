@@ -60,7 +60,11 @@
             <div class="card-header"><div class="card-title"><i class="ri-play-circle-line me-1" aria-hidden="true"></i>Send an app event</div></div>
             <div class="card-body">
                 <label for="liveClient" class="form-label">Client</label>
-                <select id="liveClient" class="form-select mb-3" asp-items="Model.ClientOptions"></select>
+                <div class="d-flex gap-2 mb-3">
+                    <select id="liveClient" class="form-select" asp-items="Model.ClientOptions"></select>
+                    <a class="btn btn-outline-secondary text-nowrap js-open-live-client" href="#" target="_blank" rel="noopener"><i class="ri-external-link-line me-1" aria-hidden="true"></i>Open client</a>
+                </div>
+                <p class="fs-12 text-muted mt-n2 mb-3">Events go to this client. Open their page in another tab or window to watch it update.</p>
                 <div class="rpd-scenarios">
                     @foreach (var s in Model.Scenarios)
                     {

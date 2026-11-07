@@ -1,0 +1,28 @@
+@model Guid
+@* Shared "add or edit a note" dialog. Opened by any .js-add-note button (data-topic, data-subject-id, data-subject-label) or .js-note-edit. *@
+<div class="modal fade" id="noteModal" tabindex="-1" aria-labelledby="noteModalLabel" aria-hidden="true" data-client-id="@Model"
+     data-save-url="@Url.Action("Save", "Notes", new { area = "Provider" })" data-delete-url="@Url.Action("Delete", "Notes", new { area = "Provider" })" data-pin-url="@Url.Action("Pin", "Notes", new { area = "Provider" })">
+    <div class="modal-dialog modal-dialog-centered">
+        <form class="modal-content js-note-form" autocomplete="off" novalidate>
+            @Html.AntiForgeryToken()
+            <div class="modal-header">
+                <h2 class="modal-title fs-5" id="noteModalLabel"><i class="ri-sticky-note-add-line me-1" aria-hidden="true"></i><span class="js-note-title">Add a note</span></h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="rpd-note-about mb-2 js-note-about d-none"></div>
+                <label for="noteBody" class="form-label">Note</label>
+                <textarea id="noteBody" class="form-control" rows="6" maxlength="@Reflect.Domain.Entities.ProviderDashboard.ClientNote.MaxLength" required></textarea>
+                <div class="d-flex justify-content-between mt-1"><span class="text-danger fs-12 js-note-error" role="alert"></span><span class="text-muted fs-12 js-note-count">0 / 2000</span></div>
+                <div class="form-check mt-2">
+                    <input class="form-check-input" type="checkbox" id="notePin" />
+                    <label class="form-check-label" for="notePin">Pin to the top of this client's notes</label>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary"><i class="ri-save-3-line me-1" aria-hidden="true"></i>Save note</button>
+            </div>
+        </form>
+    </div>
+</div>

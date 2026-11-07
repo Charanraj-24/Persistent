@@ -1,4 +1,6 @@
 @model ClientEngagementTabViewModel
+@using Reflect.Web.Models.ViewModels.ProviderDashboard.Notes
+@using Reflect.Domain.Entities.ProviderDashboard
 @using System.Globalization
 @{ var s = Model.Summary; }
 
@@ -56,7 +58,7 @@
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-bordered text-nowrap align-middle rpd-dt w-100" data-order='[[0,"desc"]]'>
-                    <thead><tr><th>Date and time</th><th>App</th><th>Module</th><th>Minutes</th><th>Completed</th><th>Mood before to after</th><th>Emotion words</th></tr></thead>
+                    <thead><tr><th>Date and time</th><th>App</th><th>Module</th><th>Minutes</th><th>Completed</th><th>Mood before to after</th><th>Emotion words</th><th data-orderable="false"><span class="visually-hidden">Notes</span></th></tr></thead>
                     <tbody>
                         @foreach (var r in Model.Sessions)
                         {
@@ -68,6 +70,7 @@
                                 <td>@if (r.Completed) { <span><i class="ri-check-line text-success me-1" aria-hidden="true"></i>Yes</span> } else { <span class="text-muted"><i class="ri-subtract-line me-1" aria-hidden="true"></i>No</span> }</td>
                                 <td data-order="@r.MoodChangeSort">@r.MoodChange</td>
                                 <td>@r.Emotions</td>
+                                <td><partial name="_NoteButton" model='NoteButtonViewModel.For(NoteTopic.Session, r.Id, $"{r.ModuleName}, {r.When}", Model.NoteCounts, $"the {r.ModuleName} session on {r.When}")' /></td>
                             </tr>
                         }
                     </tbody>

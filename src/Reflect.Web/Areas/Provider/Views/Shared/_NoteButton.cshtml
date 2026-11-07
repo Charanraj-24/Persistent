@@ -1,0 +1,7 @@
+@model Reflect.Web.Models.ViewModels.ProviderDashboard.Notes.NoteButtonViewModel
+@using Reflect.Web.Models.ViewModels.ProviderDashboard.Notes
+<button type="button" class="btn btn-sm rpd-note-btn js-add-note @(Model.Count > 0 ? "has-notes" : null)"
+        data-topic="@((int)Model.Topic)" data-topic-label="@NoteTopics.Label(Model.Topic)" data-subject-id="@Model.SubjectId" data-subject-label="@Model.SubjectLabel"
+        aria-label="Add a note about @Model.Describes@(Model.Count > 0 ? $" ({Model.Count} already)" : "")" title="Add a note">
+    <i class="ri-chat-new-line" aria-hidden="true"></i>@if (Model.Count > 0) {<span class="ms-1">@Model.Count</span>}
+</button>

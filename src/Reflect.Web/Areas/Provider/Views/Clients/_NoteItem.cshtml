@@ -1,0 +1,20 @@
+@model Reflect.Web.Models.ViewModels.ProviderDashboard.Notes.NoteRowViewModel
+<li class="rpd-note-item @(Model.IsPinned ? "is-pinned" : null)" data-note-id="@Model.Id" data-topic="@((int)Model.Topic)">
+    <div class="d-flex flex-wrap align-items-center gap-2 mb-1">
+        <span class="rpd-tag"><i class="@Model.TopicIcon me-1" aria-hidden="true"></i>@Model.TopicLabel</span>
+        @if (Model.SubjectLabel.Length > 0) { <span class="text-muted fs-12">@Model.SubjectLabel</span> }
+        @if (Model.IsPinned) { <span class="rpd-note-pin"><i class="ri-pushpin-fill me-1" aria-hidden="true"></i>Pinned</span> }
+    </div>
+    <div class="rpd-note-body js-note-body">@Model.Body</div>
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mt-2">
+        <span class="text-muted fs-12">@Model.Author · @Model.When@(Model.Edited.Length > 0 ? " · " + Model.Edited : "")</span>
+        @if (Model.CanEdit)
+        {
+            <span class="d-flex gap-1">
+                <button type="button" class="btn btn-sm btn-link p-0 me-2 js-note-pin" data-pinned="@(Model.IsPinned ? "true" : "false")">@(Model.IsPinned ? "Unpin" : "Pin")</button>
+                <button type="button" class="btn btn-sm btn-link p-0 me-2 js-note-edit">Edit</button>
+                <button type="button" class="btn btn-sm btn-link p-0 text-danger js-note-delete">Delete</button>
+            </span>
+        }
+    </div>
+</li>

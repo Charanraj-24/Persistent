@@ -2,6 +2,7 @@ namespace Reflect.Web.Models.ViewModels.ProviderDashboard.Clients;
 
 public class ArtworkTileViewModel
 {
+    public Guid SessionId { get; set; }
     public string Svg { get; set; } = string.Empty;
     public string Module { get; set; } = string.Empty;
     public bool IsXr { get; set; }

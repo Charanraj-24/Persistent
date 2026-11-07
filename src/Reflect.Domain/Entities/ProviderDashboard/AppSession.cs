@@ -15,6 +15,8 @@ public class AppSession : BaseEntity
     public bool Completed { get; set; }
     public int ArtworksCreated { get; set; }
     public int ReflectionsWritten { get; set; }
+    /// <summary>How the record arrived: "api", "phone", "live demo" or "simulator". Empty for imported history.</summary>
+    public string Source { get; set; } = string.Empty;
 
     public double DurationMinutes => Math.Max(0, (EndedAt - StartedAt).TotalMinutes);
 }

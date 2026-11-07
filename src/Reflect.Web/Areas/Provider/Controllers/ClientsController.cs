@@ -22,10 +22,11 @@ public class ClientsController : Controller
     private readonly IObservationRepository _observations;
     private readonly IRtmTimeEntryRepository _timeEntries;
     private readonly IAccessAuditRepository _audit;
+    private readonly IClientNoteRepository _notes;
 
     public ClientsController(ICurrentUserService currentUser, IProviderProfileRepository providers, IProviderClientRepository clients,
         IAppSessionRepository sessions, IMoodCheckInRepository checkIns, IAssessmentResultRepository assessments,
-        IObservationRepository observations, IRtmTimeEntryRepository timeEntries, IAccessAuditRepository audit)
+        IObservationRepository observations, IRtmTimeEntryRepository timeEntries, IAccessAuditRepository audit, IClientNoteRepository notes)
     {
         _currentUser = currentUser;
         _providers = providers;
@@ -36,6 +37,7 @@ public class ClientsController : Controller
         _observations = observations;
         _timeEntries = timeEntries;
         _audit = audit;
+        _notes = notes;
     }
 
     public async Task<IActionResult> Index(CancellationToken ct)
@@ -59,6 +61,10 @@ public class ClientsController : Controller
     {
         var vm = new ClientPrepViewModel();
         await vm.PrepareData(id, _currentUser, _providers, _clients, _sessions, _checkIns, _assessments, _timeEntries, ct);
+        var notes = new Reflect.Web.Models.ViewModels.ProviderDashboard.Notes.ClientNotesViewModel();
+        await notes.PrepareData(id, _currentUser, _providers, _clients, _notes, ct);
+        vm.RecentNotes = notes.Notes.Take(3).ToList();
+        vm.NoteTotal = notes.Notes.Count;
         return View(vm);
     }
 
@@ -68,6 +74,15 @@ public class ClientsController : Controller
         var vm = new ClientDetailsViewModel();
         await vm.PrepareData(id, _currentUser, _providers, _clients, _sessions, _timeEntries, ct);
         return PartialView("_StatusStrip", vm);
+    }
+
+    /// <summary>AJAX: "Latest from Reflect", refreshed when live data arrives.</summary>
+    [HttpGet]
+    public async Task<IActionResult> Activity(Guid id, CancellationToken ct)
+    {
+        var vm = new ClientActivityViewModel();
+        await vm.PrepareData(id, _currentUser, _providers, _clients, _sessions, _checkIns, _assessments, _observations, ct);
+        return PartialView("_Activity", vm);
     }
 
     /// <summary>AJAX: one tab of the client page, loaded the first time the provider opens it.</summary>
@@ -86,19 +101,28 @@ public class ClientsController : Controller
             {
                 var vm = new ClientEngagementTabViewModel();
                 await vm.PrepareData(id, _currentUser, _providers, _clients, _sessions, _checkIns, ct);
+                vm.NoteCounts = await Reflect.Web.Models.ViewModels.ProviderDashboard.Notes.ClientNotesViewModel.CountsBySubjectAsync(id, _notes, ct);
                 return PartialView("_TabEngagement", vm);
             }
             case "response":
             {
                 var vm = new ClientResponseTabViewModel();
                 await vm.PrepareData(id, _currentUser, _providers, _clients, _checkIns, _assessments, ct);
+                vm.NoteCounts = await Reflect.Web.Models.ViewModels.ProviderDashboard.Notes.ClientNotesViewModel.CountsBySubjectAsync(id, _notes, ct);
                 return PartialView("_TabResponse", vm);
             }
             case "art":
             {
                 var vm = new ClientArtTabViewModel();
                 await vm.PrepareData(id, _currentUser, _providers, _clients, _sessions, _checkIns, ct);
+                vm.NoteCounts = await Reflect.Web.Models.ViewModels.ProviderDashboard.Notes.ClientNotesViewModel.CountsBySubjectAsync(id, _notes, ct);
                 return PartialView("_TabArt", vm);
+            }
+            case "notes":
+            {
+                var vm = new Reflect.Web.Models.ViewModels.ProviderDashboard.Notes.ClientNotesViewModel();
+                await vm.PrepareData(id, _currentUser, _providers, _clients, _notes, ct);
+                return PartialView("_TabNotes", vm);
             }
             case "physiologic":
             {

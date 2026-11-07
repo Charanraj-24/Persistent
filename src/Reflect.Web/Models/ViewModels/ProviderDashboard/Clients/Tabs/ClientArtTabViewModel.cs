@@ -11,6 +11,8 @@ namespace Reflect.Web.Models.ViewModels.ProviderDashboard.Clients.Tabs;
 /// <summary>Artwork tab: a visual timeline of the pieces the client made in Reflect, with mood and emotion words from each session.</summary>
 public class ClientArtTabViewModel
 {
+    /// <summary>Note counts per session / assessment id, filled by the controller.</summary>
+    public Dictionary<Guid, int> NoteCounts { get; set; } = new();
     public List<ArtworkTileViewModel> Tiles { get; set; } = new();
     public int TotalPieces { get; set; }
     public List<(string Word, int Count)> TopWords { get; set; } = new();
@@ -33,6 +35,7 @@ public class ClientArtTabViewModel
             var tags = (post?.EmotionTags ?? pre?.EmotionTags ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
             Tiles.Add(new ArtworkTileViewModel
             {
+                SessionId = s.Id,
                 Svg = SyntheticArtworkRenderer.Render(s.Id, tags, "art" + s.Id.ToString("N")[..8]),
                 Module = ModuleCatalog.Get(s.ModuleKey).Name.Replace(" (Mobile)", string.Empty),
                 IsXr = s.Platform == ReflectPlatform.ReflectXR,

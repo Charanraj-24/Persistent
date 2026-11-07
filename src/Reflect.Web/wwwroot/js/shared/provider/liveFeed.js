@@ -54,6 +54,8 @@ window.ProviderLiveFeed = (function ($) {
         }
 
         document.addEventListener('visibilitychange', function () { if (!document.hidden) poll(); });
+        // A page restored with Back/Forward may be out of date: reload it.
+        window.addEventListener('pageshow', function (e) { if (e.persisted) window.location.reload(); });
         poll();
     }
 

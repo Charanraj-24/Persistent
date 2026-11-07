@@ -1,4 +1,6 @@
 @model ClientArtTabViewModel
+@using Reflect.Web.Models.ViewModels.ProviderDashboard.Notes
+@using Reflect.Domain.Entities.ProviderDashboard
 
 @if (Model.Tiles.Count == 0)
 {
@@ -26,7 +28,8 @@ else
                 <figcaption>
                     <div class="d-flex justify-content-between align-items-start gap-2">
                         <div class="fw-semibold fs-13">@t.Module</div>
-                        <span class="rpd-tag @(t.IsXr ? "is-xr" : null)">@(t.IsXr ? "XR" : "Mobile")</span>
+                        <span class="d-flex align-items-center gap-1"><span class="rpd-tag @(t.IsXr ? "is-xr" : null)">@(t.IsXr ? "XR" : "Mobile")</span>
+                            <partial name="_NoteButton" model='NoteButtonViewModel.For(NoteTopic.Artwork, t.SessionId, $"{t.Module}, {t.Date}", Model.NoteCounts, $"the artwork from {t.Module} on {t.Date}")' /></span>
                     </div>
                     <div class="text-muted fs-12">@t.Date · @(t.Mood == null ? "No check-in" : "Mood " + t.Mood)
                         @if (t.MoodLift > 0) { <span class="text-success fw-semibold">(+@t.MoodLift)</span> }
