@@ -1,0 +1,31 @@
+@model DashboardTrendsTabViewModel
+
+<div class="row">
+    <div class="col-12 col-xl-7">
+        <div class="card custom-card">
+            <div class="card-header">
+                <div class="card-title">Caseload activity, last 30 days</div>
+                <partial name="_ViewToggle" model='ViewToggleViewModel.Of("activity", ("days", "By day", "ri-bar-chart-box-line"), ("experience", "By experience", "ri-bar-chart-2-line"))' />
+            </div>
+            <div class="card-body">
+                <div data-view-panel="activity:days"><div class="rpd-chart"><canvas data-chart="activity" role="img" aria-label="Stacked bar chart of daily Reflect XR and Reflect Mobile sessions across your caseload for the last 30 days"></canvas></div></div>
+                <div data-view-panel="activity:experience" class="d-none"><div class="rpd-chart"><canvas data-chart="experiences" role="img" aria-label="Bar chart of minutes in each Reflect experience across your caseload"></canvas></div></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-xl-5">
+        <div class="card custom-card">
+            <div class="card-header">
+                <div class="card-title">RTM readiness</div>
+                <partial name="_ViewToggle" model='ViewToggleViewModel.Of("readiness", ("tiers", "Data days", "ri-calendar-line"), ("status", "Status", "ri-pie-chart-line"))' />
+            </div>
+            <div class="card-body">
+                <div data-view-panel="readiness:tiers"><div class="rpd-chart"><canvas data-chart="tiers" role="img" aria-label="Bar chart of active clients by data days in their current 30-day period"></canvas></div></div>
+                <div data-view-panel="readiness:status" class="d-none"><div class="rpd-chart"><canvas data-chart="status" role="img" aria-label="Doughnut chart of active clients by RTM billing status"></canvas></div></div>
+                <div class="rpd-note mt-2">Active clients, current 30-day period and calendar month.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="application/json" class="js-tab-data">@Html.Raw(Model.ChartDataJson)</script>

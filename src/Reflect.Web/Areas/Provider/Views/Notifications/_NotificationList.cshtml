@@ -1,0 +1,24 @@
+@model Reflect.Web.Models.ViewModels.ProviderDashboard.Notifications.NotificationsViewModel
+
+@if (Model.Items.Count == 0)
+{
+    <div class="rpd-notif-empty"><i class="ri-checkbox-circle-line" aria-hidden="true"></i>You're all caught up.</div>
+}
+else
+{
+    <ul class="rpd-notif-list" role="list">
+        @foreach (var n in Model.Items)
+        {
+            <li class="@(n.IsRead ? "is-read" : null)">
+                <a class="rpd-notif-item" asp-controller="Clients" asp-action="Details" asp-route-id="@n.ClientId">
+                    <span class="rpd-notif-icon is-@n.Tone"><i class="@n.Icon" aria-hidden="true"></i></span>
+                    <span class="rpd-notif-text">
+                        <span class="rpd-notif-title">@n.Title</span>
+                        <span class="rpd-notif-detail">@n.Detail</span>
+                    </span>
+                    @if (!n.IsRead) { <span class="rpd-notif-dot" aria-label="Unread"></span> }
+                </a>
+            </li>
+        }
+    </ul>
+}

@@ -1,0 +1,37 @@
+@{
+    Layout = null;
+    var code = ViewData["Code"] as string ?? string.Empty;
+    var lift = (int)(ViewData["Lift"] ?? 0);
+}
+<!DOCTYPE html>
+<html lang="en" data-theme-mode="light">
+<head>
+    <partial name="_CheckInHead" />
+    <title>Thanks - Reflect check-in</title>
+</head>
+<body class="ci-body">
+    <main class="ci">
+        <header class="ci-hero">
+            <div class="ci-brand"><partial name="~/Standins/Views/_BrandMark.cshtml" /><span>Reflect</span></div>
+        </header>
+        <section class="ci-card text-center">
+            <div class="ci-done-icon" aria-hidden="true"><i class="ri-check-line"></i></div>
+            <h1 class="ci-title ci-title-dark">Thank you!</h1>
+            <p class="mb-2" role="status">Your check-in is on the provider's screen now.</p>
+            @if (lift > 0)
+            {
+                <p class="text-muted">Your mood went up @lift @(lift == 1 ? "point" : "points"). That shift is what clinicians look for between sessions.</p>
+            }
+            else
+            {
+                <p class="text-muted">Every check-in, good day or hard day, gives the clinician a clearer picture between sessions.</p>
+            }
+            @if (!string.IsNullOrEmpty(code))
+            {
+                <a class="btn btn-outline-primary mt-2" href="/checkin?code=@code">Send another</a>
+            }
+            <p class="ci-note mt-4"><i class="ri-shield-check-line" aria-hidden="true"></i>Demo only. Nothing you entered is linked to you.</p>
+        </section>
+    </main>
+</body>
+</html>

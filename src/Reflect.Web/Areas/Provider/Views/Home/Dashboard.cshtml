@@ -1,0 +1,68 @@
+@inject Microsoft.Extensions.Options.IOptions<Reflect.Web.Services.Assistant.AssistantOptions> AssistantSettings
+@model ProviderDashboardViewModel
+@{
+    ViewData["Title"] = "Dashboard";
+}
+@section Styles { <partial name="_ProviderStyles" /> }
+
+<section class="rpd-hero" aria-labelledby="dashTitle">
+    <div class="rpd-page-header">
+        <div>
+            <h1 class="page-title" id="dashTitle">Provider dashboard</h1>
+            <p class="rpd-hero-sub">@Model.ProviderName at @Model.FacilityName. Remote therapeutic monitoring for @Model.MonthLabel, with @TextFormat.Count(Model.DaysLeftInMonth, "day") left in the month.</p>
+        </div>
+        <div class="rpd-page-actions">
+            <span id="liveIndicator" class="rpd-live-pill"><span class="rpd-live-dot" aria-hidden="true"></span><span class="js-live-text">Connecting...</span></span>
+            <partial name="_AssistantHint" />
+            <a class="btn btn-outline-secondary" asp-controller="Reports" asp-action="Monthly"><i class="ri-file-chart-line me-1" aria-hidden="true"></i>Monthly report</a>
+        </div>
+    </div>
+</section>
+
+<div id="dashboardKpis" data-refresh-url="@Url.Action("Kpis", "Home")">
+    <partial name="_DashboardKpis" model="Model" />
+</div>
+
+<ul class="nav nav-tabs" id="dashboardTabs" role="tablist">
+    @for (var i = 0; i < ProviderDashboardViewModel.Tabs.Count; i++)
+    {
+        var t = ProviderDashboardViewModel.Tabs[i];
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(i == 0 ? "active" : null)" id="dtab-@(t.Key)-btn" data-bs-toggle="tab" data-bs-target="#dtab-@t.Key" type="button" role="tab" aria-controls="dtab-@t.Key" aria-selected="@(i == 0 ? "true" : "false")">
+                <i class="@t.Icon me-1" aria-hidden="true"></i>@t.Label
+                @if (t.Key == "attention" && Model.ClientsNeedingAttention > 0) { <span class="badge bg-danger-transparent text-danger ms-1">@Model.ClientsNeedingAttention</span> }
+                @if (t.Key == "todos" && Model.OpenTodos > 0) { <span class="badge bg-info-transparent text-info ms-1">@Model.OpenTodos</span> }
+            </button>
+        </li>
+    }
+</ul>
+
+<div class="tab-content rpd-tab-content" id="dashboardTabsContent">
+    @for (var i = 0; i < ProviderDashboardViewModel.Tabs.Count; i++)
+    {
+        var t = ProviderDashboardViewModel.Tabs[i];
+        <div class="tab-pane fade @(i == 0 ? "show active" : null)" id="dtab-@t.Key" role="tabpanel" aria-labelledby="dtab-@(t.Key)-btn" tabindex="0"
+             data-tab-url="@Url.Action("Tab", "Home", new { name = t.Key })">
+            <partial name="_TabLoading" model="@t.Label" />
+        </div>
+    }
+</div>
+
+<partial name="_AssistantPanel" model='Reflect.Web.Models.ViewModels.ProviderDashboard.Assistant.AssistantPanelViewModel.ForCaseload(AssistantSettings.Value.IsConfigured, AssistantSettings.Value.Model)' />
+<form id="antiForgeryForm" class="d-none" method="post">@Html.AntiForgeryToken()</form>
+
+@section Scripts {
+    <script src="~/assets/libs/chartjs/chart.umd.js"></script>
+    <script src="~/js/shared/provider/providerCharts.js" asp-append-version="true"></script>
+    <script src="~/js/shared/provider/providerTabs.js" asp-append-version="true"></script>
+    <script src="~/js/shared/provider/liveFeed.js" asp-append-version="true"></script>
+    <script src="~/js/services/provider/dashboardService.js" asp-append-version="true"></script>
+    <script src="~/js/controllers/provider/moduleUsageController.js" asp-append-version="true"></script>
+    <script src="~/js/controllers/provider/dashboardController.js" asp-append-version="true"></script>
+    <script src="~/js/services/provider/assistantService.js" asp-append-version="true"></script>
+    <script src="~/js/controllers/provider/assistantController.js" asp-append-version="true"></script>
+    <script nonce="@Context.GetCspNonce()">
+        ProviderDashboardController.init({ tabsId: 'dashboardTabs', feedUrl: '@Url.Action("Feed", "Live")', loadFailed: '@Reflect.Web.Messages.ProviderDashboardMessages.TabLoadFailed' });
+        AssistantController.init();
+    </script>
+}

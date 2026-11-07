@@ -1,0 +1,71 @@
+@model DashboardOutcomesTabViewModel
+@using System.Globalization
+@{
+    string Pct(double v) => v.ToString("0", CultureInfo.InvariantCulture) + "%";
+    var p = Model.Phq;
+}
+
+<div class="rpd-statstrip" role="group" aria-label="PHQ-9 outcomes">
+    <div class="rpd-stat">
+        <div class="rpd-stat-label"><i class="ri-survey-line" aria-hidden="true"></i>Clients with repeat PHQ-9</div>
+        <div class="rpd-stat-value">@p.Measured</div>
+        <div class="rpd-stat-note">Average @p.AverageBaseline.ToString("0.0", CultureInfo.InvariantCulture) to @p.AverageLatest.ToString("0.0", CultureInfo.InvariantCulture)</div>
+    </div>
+    <div class="rpd-stat">
+        <div class="rpd-stat-label"><i class="ri-arrow-down-line" aria-hidden="true"></i>Improved 5+ points</div>
+        <div class="rpd-stat-value">@Pct(p.Pct(p.Improved, p.Measured))</div>
+        <div class="rpd-stat-note">@p.Improved of @p.Measured; @p.Worsened worsened</div>
+    </div>
+    <div class="rpd-stat">
+        <div class="rpd-stat-label"><i class="ri-line-chart-line" aria-hidden="true"></i>Response</div>
+        <div class="rpd-stat-value">@Pct(p.Pct(p.Responders, p.ElevatedAtBaseline))</div>
+        <div class="rpd-stat-note">50%+ drop, of @p.ElevatedAtBaseline starting at 10 or more</div>
+    </div>
+    <div class="rpd-stat">
+        <div class="rpd-stat-label"><i class="ri-award-line" aria-hidden="true"></i>Remission</div>
+        <div class="rpd-stat-value">@Pct(p.Pct(p.Remitted, p.ElevatedAtBaseline))</div>
+        <div class="rpd-stat-note">Now below 5. GAD-7 remission: @Pct(Model.Gad.Pct(Model.Gad.Remitted, Model.Gad.ElevatedAtBaseline))</div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12 col-xl-6">
+        <div class="card custom-card">
+            <div class="card-header">
+                <div class="card-title">Symptom change</div>
+                <partial name="_ViewToggle" model='ViewToggleViewModel.Of("outcomes", ("before", "Before and after", "ri-bar-chart-2-line"), ("engagement", "Engagement vs. change", "ri-bubble-chart-line"))' />
+            </div>
+            <div class="card-body">
+                <div data-view-panel="outcomes:before"><div class="rpd-chart"><canvas data-chart="beforeAfter" role="img" aria-label="Bar chart of average PHQ-9 and GAD-7 at baseline and now"></canvas></div></div>
+                <div data-view-panel="outcomes:engagement" class="d-none"><div class="rpd-chart"><canvas data-chart="scatter" role="img" aria-label="Scatter chart of active days in the last 30 days against PHQ-9 change for each client"></canvas></div>
+                    <div class="rpd-note mt-2">Each dot is a client. Lower is better. Observational, not causal.</div></div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-xl-6">
+        <div class="card custom-card">
+            <div class="card-header"><div class="card-title">By client</div><span class="text-muted fs-12">Baseline to latest</span></div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered text-nowrap align-middle rpd-dt w-100" data-order='[]' data-page-length="10">
+                        <thead><tr><th>Client</th><th>PHQ-9</th><th>GAD-7</th><th>Status</th></tr></thead>
+                        <tbody>
+                            @foreach (var r in Model.Rows)
+                            {
+                                <tr>
+                                    <td><a class="fw-semibold text-reset" asp-controller="Clients" asp-action="Details" asp-route-id="@r.ClientId">@r.Name</a></td>
+                                    <td data-order="@r.PhqChangeSort">@r.Phq</td>
+                                    <td>@r.Gad</td>
+                                    <td><partial name="_Badge" model="r.Status" /></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="rpd-note mb-3">Response: PHQ-9 or GAD-7 dropped by half or more from a baseline of 10+. Remission: now below 5. Baseline is the first score in the last 120 days. Synthetic data.</div>
+
+<script type="application/json" class="js-tab-data">@Html.Raw(Model.ChartDataJson)</script>

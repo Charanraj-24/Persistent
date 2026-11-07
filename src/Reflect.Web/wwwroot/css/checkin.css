@@ -1,0 +1,31 @@
+/* Public phone check-in (demo). Mobile first, PTI palette via theme tokens. */
+.ci-body { min-height: 100vh; margin: 0; background: var(--default-background, #F7F6F4); color: var(--default-text-color); font-family: var(--default-font-family); }
+.ci { max-width: 30rem; margin: 0 auto; padding: 0 0 2rem; }
+.ci-hero { position: relative; padding: calc(1.25rem + env(safe-area-inset-top)) 1.25rem 4.5rem; color: #fff; overflow: hidden;
+    background: radial-gradient(120% 90% at 100% 0%, rgba(255, 140, 120, 0.55), transparent 55%), radial-gradient(90% 80% at 0% 100%, rgba(120, 110, 190, 0.5), transparent 60%), #1F305E; }
+.ci-brand { display: flex; align-items: center; gap: 0.5rem; font-weight: 700; font-size: 1.05rem; margin-bottom: 1.25rem; }
+.ci-brand svg, .ci-brand img { width: 1.75rem; height: 1.75rem; }
+.ci-title { font-family: var(--heading-font-family); font-size: 1.6rem; font-weight: 700; margin: 0 0 0.35rem; }
+.ci-title-dark { color: var(--default-text-color); }
+.ci-lead { margin: 0; opacity: 0.85; font-size: 0.9375rem; }
+.ci-card { position: relative; margin: -3.25rem 0.75rem 0; padding: 1.25rem; border-radius: 1rem; background: var(--surface, var(--custom-white, #fff)); border: 1px solid var(--hairline, var(--default-border)); box-shadow: var(--shadow-md, 0 8px 24px rgba(31, 48, 94, 0.12)); }
+.ci-form .form-select, .ci-form .form-control { font-size: 1rem; }
+.ci-field { margin-bottom: 1.25rem; border: 0; padding: 0; }
+.ci-out { font-family: var(--heading-font-family); font-weight: 700; font-size: 1.25rem; min-width: 2ch; text-align: right; }
+.ci-scale { display: flex; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); }
+.ci-form .form-range { height: 2rem; accent-color: rgb(var(--primary-rgb)); }
+.ci-form .form-range::-webkit-slider-thumb { background: #1F305E; width: 1.5rem; height: 1.5rem; margin-top: -0.5rem; }
+.ci-form .form-range::-moz-range-thumb { background: #1F305E; width: 1.5rem; height: 1.5rem; }
+.ci-form .form-range::-webkit-slider-runnable-track { background: rgba(var(--primary-rgb), 0.35); }
+.ci-form .form-range::-moz-range-track { background: rgba(var(--primary-rgb), 0.35); }
+.ci-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.ci-chip { position: relative; }
+.ci-chip input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.ci-chip span { display: inline-block; padding: 0.45rem 0.85rem; border-radius: 2rem; border: 1px solid var(--default-border); font-size: 0.9375rem; min-height: 2.5rem; line-height: 1.5rem; }
+.ci-chip input:checked + span { background: rgb(var(--primary-rgb)); border-color: rgb(var(--primary-rgb)); color: #1F305E; font-weight: 600; }
+.ci-chip input:focus-visible + span { outline: 0.15rem solid rgb(var(--primary-rgb)); outline-offset: 0.15rem; }
+.ci-chip.is-disabled span { opacity: 0.45; }
+.ci-code-input { text-align: center; letter-spacing: 0.4em; font-family: var(--heading-font-family); font-weight: 700; text-transform: uppercase; font-size: 1.5rem !important; }
+.ci-alert { display: flex; gap: 0.5rem; align-items: flex-start; padding: 0.75rem; border-radius: 0.6rem; margin-bottom: 1rem; background: rgba(var(--danger-rgb), 0.12); font-size: 0.9375rem; }
+.ci-note { display: flex; gap: 0.4rem; align-items: flex-start; justify-content: center; font-size: 0.75rem; color: var(--text-muted); margin: 1rem 0 0; }
+.ci-done-icon { width: 3.5rem; height: 3.5rem; margin: 0.25rem auto 0.75rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.75rem; color: #1F305E; background: rgb(var(--primary-rgb)); }

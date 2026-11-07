@@ -1,0 +1,59 @@
+@model Reflect.Web.Models.ViewModels.ProviderDashboard.Assistant.AssistantPanelViewModel
+@*
+    Clinical assistant: a centered panel that opens and closes with Ctrl + Shift (pressed together, then released),
+    with a wave that spreads across the screen. Esc and the close button also close it.
+    The conversation is kept on the server per provider and per scope (caseload or one client).
+*@
+<div class="rpd-ai" id="assistantPanel" hidden
+     data-ask-url="@Url.Action("Ask", "Assistant", new { area = "Provider" })"
+     data-history-url="@Url.Action("History", "Assistant", new { area = "Provider" })"
+     data-clear-url="@Url.Action("ClearHistory", "Assistant", new { area = "Provider" })"
+     data-client-id="@Model.ClientId">
+    <div class="rpd-ai-waves" aria-hidden="true">
+        <span class="rpd-ai-wash"></span>
+        <span class="rpd-ai-ring"></span><span class="rpd-ai-ring"></span><span class="rpd-ai-ring"></span><span class="rpd-ai-ring"></span>
+    </div>
+    <div class="rpd-ai-backdrop js-ai-close"></div>
+    <section class="rpd-ai-dialog" role="dialog" aria-modal="true" aria-labelledby="assistantPanelLabel" aria-describedby="assistantPanelSub">
+        <header class="rpd-ai-head">
+            <span class="rpd-ai-orb" aria-hidden="true"><i class="ri-sparkling-2-fill"></i></span>
+            <div class="flex-grow-1 min-w-0">
+                <h2 class="rpd-ai-title" id="assistantPanelLabel">@Model.Title</h2>
+                <div class="text-muted fs-12" id="assistantPanelSub">@Model.Subtitle</div>
+            </div>
+            <button type="button" class="btn btn-sm btn-outline-secondary js-ai-clear" title="Delete this conversation"><i class="ri-delete-bin-6-line me-1" aria-hidden="true"></i>Clear chat</button>
+            <button type="button" class="btn-close js-ai-close" aria-label="Close the assistant"></button>
+        </header>
+
+        @if (!Model.IsConfigured)
+        {
+            <div class="rpd-flag rpd-flag-warning mx-3 mt-3 mb-0"><i class="ri-error-warning-line rpd-flag-icon text-warning" aria-hidden="true"></i>
+                <div class="fs-13">AI model not connected. Set <code>Assistant:ApiKey</code> to get free-form answers. Until then you'll see the data summary it would use.</div></div>
+        }
+
+        <div class="rpd-chat-log" id="assistantLog" aria-live="polite">
+            <div class="rpd-chat-intro">
+                <div class="fs-13 mb-2">Try one of these:</div>
+                <div class="d-flex flex-column gap-2">
+                    @foreach (var s in Model.Suggestions)
+                    {
+                        <button type="button" class="rpd-chat-suggestion js-assistant-suggestion">@s</button>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <form class="rpd-chat-form" id="assistantForm" autocomplete="off">
+            @Html.AntiForgeryToken()
+            <label for="assistantQuestion" class="visually-hidden">Your question</label>
+            <div class="rpd-ai-input">
+                <textarea id="assistantQuestion" class="form-control" rows="2" maxlength="800" placeholder="Ask a question about @(Model.ClientId.HasValue ? "this client" : "your clients")..."></textarea>
+                <button type="submit" class="btn btn-primary" aria-label="Ask"><i class="ri-send-plane-2-line" aria-hidden="true"></i></button>
+            </div>
+            <div class="d-flex flex-wrap justify-content-between align-items-center mt-2 gap-2">
+                <span class="rpd-note">Names and identifiers aren't sent to the AI. Verify before acting.</span>
+                <span class="rpd-note"><kbd>Ctrl</kbd> + <kbd>Shift</kbd> to close</span>
+            </div>
+        </form>
+    </section>
+</div>

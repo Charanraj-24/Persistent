@@ -1,0 +1,12 @@
+@* STAND-IN: standard not-found page. Delete on merge. *@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="card custom-card mx-auto mt-4" style="max-width: 36rem;">
+    <div class="card-body text-center p-5">
+        <i class="ri-file-search-line fs-30 text-info" aria-hidden="true"></i>
+        <h1 class="page-title mt-3 mb-2">Not found</h1>
+        <p class="text-muted mb-4">@ViewData["Message"]</p>
+        <a class="btn btn-primary" href="/Provider/Clients/Index">Back to clients</a>
+    </div>
+</div>

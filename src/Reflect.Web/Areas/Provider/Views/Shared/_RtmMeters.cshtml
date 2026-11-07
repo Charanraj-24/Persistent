@@ -1,0 +1,64 @@
+@model RtmEvaluation
+@using System.Globalization
+@{
+    string Pct(double v, double max) => (Math.Min(1.0, Math.Max(0, v / max)) * 100).ToString("0.##", CultureInfo.InvariantCulture) + "%";
+    const double dayMax = 30;
+    var minuteMax = Math.Max(60, Model.ManagementMinutes + Model.PendingMinutes + 5);
+    var attestedPct = Pct(Model.ManagementMinutes, minuteMax);
+    var pendingLeft = attestedPct;
+    var pendingWidth = Pct(Model.PendingMinutes, minuteMax);
+}
+<div class="rpd-meter" role="group" aria-label="Data days this 30-day period">
+    <div class="rpd-meter-head">
+        <span><span class="fw-semibold">Data days</span> <span class="text-muted fs-12">this 30-day period, @TextFormat.Count(Model.DaysRemainingInPeriod, "day") left</span></span>
+        <span class="rpd-meter-value">@Model.DataDaysInPeriod <span class="fs-13 text-muted">/ 16</span></span>
+    </div>
+    <div class="rpd-meter-track" aria-hidden="true">
+        <div class="rpd-meter-fill" style="width: @Pct(Model.DataDaysInPeriod, dayMax)"></div>
+        <div class="rpd-meter-tick" style="left: @Pct(2, dayMax)"></div>
+        <div class="rpd-meter-tick" style="left: @Pct(16, dayMax)"></div>
+    </div>
+    <div class="rpd-meter-scale" aria-hidden="true">
+        <span class="is-start" style="left: 0">0</span>
+        <span style="left: @Pct(2, dayMax)">2: 98986</span>
+        <span style="left: @Pct(16, dayMax)">16: 98978</span>
+        <span class="is-end" style="left: 100%">30</span>
+    </div>
+</div>
+<div class="rpd-meter" role="group" aria-label="Treatment management minutes this calendar month">
+    <div class="rpd-meter-head">
+        <span><span class="fw-semibold">Provider minutes</span> <span class="text-muted fs-12">this calendar month, attested</span></span>
+        <span class="rpd-meter-value">@Model.ManagementMinutes <span class="fs-13 text-muted">min</span>
+            @if (Model.PendingMinutes > 0)
+            {
+                <span class="badge bg-warning-transparent text-warning ms-1"><i class="ri-time-line me-1" aria-hidden="true"></i>+@Model.PendingMinutes pending</span>
+            }
+        </span>
+    </div>
+    <div class="rpd-meter-track" aria-hidden="true">
+        <div class="rpd-meter-fill" style="width: @attestedPct"></div>
+        @if (Model.PendingMinutes > 0)
+        {
+            <div class="rpd-meter-fill is-pending" style="left: @pendingLeft; width: @pendingWidth"></div>
+        }
+        <div class="rpd-meter-tick" style="left: @Pct(10, minuteMax)"></div>
+        <div class="rpd-meter-tick" style="left: @Pct(20, minuteMax)"></div>
+        <div class="rpd-meter-tick" style="left: @Pct(40, minuteMax)"></div>
+    </div>
+    <div class="rpd-meter-scale" aria-hidden="true">
+        <span class="is-start" style="left: 0">0</span>
+        <span style="left: @Pct(10, minuteMax)">10</span>
+        <span style="left: @Pct(20, minuteMax)">20: 98980</span>
+        <span style="left: @Pct(40, minuteMax)">40: +98981</span>
+    </div>
+    <div class="mt-2 fs-12">
+        @if (Model.HasRealTimeInteraction)
+        {
+            <span class="badge bg-success-transparent text-success"><i class="ri-video-chat-line me-1" aria-hidden="true"></i>Live interaction logged</span>
+        }
+        else
+        {
+            <span class="badge bg-danger-transparent text-danger"><i class="ri-error-warning-line me-1" aria-hidden="true"></i>No live interaction yet</span>
+        }
+    </div>
+</div>

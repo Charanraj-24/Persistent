@@ -1,0 +1,120 @@
+@model MonthlyReportViewModel
+@{
+    ViewData["Title"] = "Monthly RTM report";
+}
+@section Styles { <partial name="_ProviderStyles" /> }
+
+<div class="rpd-page-header">
+    <div>
+        <h1 class="page-title mb-1">Monthly RTM report</h1>
+        <p class="text-muted fs-13 mb-0">@Model.ProviderName (NPI @Model.ProviderNpi). @(Model.IsCurrentMonth ? $"Month to date as of {Model.AsOfLabel}." : $"Final for {Model.MonthLabel}.")</p>
+    </div>
+    <div class="rpd-page-actions">
+        <form method="get" asp-action="Monthly" class="m-0">
+            <label for="month" class="visually-hidden">Month</label>
+            <select id="month" name="month" class="form-select js-auto-submit-select" asp-items="Model.MonthOptions"></select>
+        </form>
+        <a class="btn btn-primary" asp-action="ExportCsv" asp-route-month="@Model.Month"><i class="ri-download-2-line me-1" aria-hidden="true"></i>Export CSV</a>
+    </div>
+</div>
+
+<div class="row rpd-kpi-row">
+    <div class="col-12 col-md-4">
+        <div class="card custom-card"><div class="card-body rpd-kpi">
+            <span class="rpd-kpi-icon bg-success-transparent"><i class="ri-checkbox-circle-line" aria-hidden="true"></i></span>
+            <div><div class="rpd-kpi-value">@Model.ClientsBillable <span class="fs-14 text-muted">of @Model.Rows.Count</span></div><div class="rpd-kpi-label">Clients with billable codes</div></div>
+        </div></div>
+    </div>
+    <div class="col-12 col-md-4">
+        <div class="card custom-card"><div class="card-body rpd-kpi">
+            <span class="rpd-kpi-icon bg-info-transparent"><i class="ri-timer-line" aria-hidden="true"></i></span>
+            <div><div class="rpd-kpi-value">@Model.Estimate.Rounded</div><div class="rpd-kpi-label">Estimated billing from @Model.TotalMinutes attested minutes and ready codes</div><div class="rpd-kpi-sub" title="@RtmFeeSchedule.Source">Medicare national average@(Model.Estimate.UnpricedUnits > 0 ? $"; {Model.Estimate.UnpricedUnits} device codes priced locally" : string.Empty)</div></div>
+        </div></div>
+    </div>
+    <div class="col-12 col-md-4">
+        <div class="card custom-card"><div class="card-body">
+            <div class="rpd-kpi-label mb-2">Supported codes (units)</div>
+            @if (Model.CodeTotals.Count == 0) { <span class="text-muted fs-13">None</span> }
+            @foreach (var kv in Model.CodeTotals)
+            {
+                <span class="rpd-code" title="@RtmBillingRules.Describe(kv.Key)">@kv.Key <small>x@(kv.Value)</small></span>
+            }
+        </div></div>
+    </div>
+</div>
+
+<ul class="nav nav-tabs" id="reportTabs" role="tablist">
+    <li class="nav-item" role="presentation"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#rtab-summary" type="button" role="tab" aria-controls="rtab-summary" aria-selected="true"><i class="ri-pie-chart-line me-1" aria-hidden="true"></i>Summary</button></li>
+    <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#rtab-clients" type="button" role="tab" aria-controls="rtab-clients" aria-selected="false"><i class="ri-table-line me-1" aria-hidden="true"></i>Clients (@Model.Rows.Count)</button></li>
+</ul>
+
+<div class="tab-content rpd-tab-content" id="reportTabsContent">
+<div class="tab-pane fade show active" id="rtab-summary" role="tabpanel" tabindex="0">
+    <div class="row">
+        <div class="col-12 col-xl-7">
+            <div class="card custom-card">
+                <div class="card-header">
+                    <div class="card-title">Treatment management minutes by client</div>
+                    <span class="text-muted fs-12">Line at 20 min (98980)</span>
+                </div>
+                <div class="card-body"><div class="rpd-chart rpd-chart-lg"><canvas data-chart="minutes" role="img" aria-label="Bar chart of attested and pending treatment management minutes for each client"></canvas></div></div>
+            </div>
+        </div>
+        <div class="col-12 col-xl-5">
+            <div class="card custom-card">
+                <div class="card-header">
+                    <div class="card-title">Codes and status</div>
+                    <partial name="_ViewToggle" model='ViewToggleViewModel.Of("report", ("codes", "Codes", "ri-bar-chart-2-line"), ("status", "Status", "ri-pie-chart-line"))' />
+                </div>
+                <div class="card-body">
+                    <div data-view-panel="report:codes"><div class="rpd-chart rpd-chart-lg"><canvas data-chart="codes" role="img" aria-label="Bar chart of units for each RTM code"></canvas></div></div>
+                    <div data-view-panel="report:status" class="d-none"><div class="rpd-chart rpd-chart-lg"><canvas data-chart="status" role="img" aria-label="Doughnut chart of clients by billing status"></canvas></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="tab-pane fade" id="rtab-clients" role="tabpanel" tabindex="0">
+<div class="card custom-card">
+    <div class="card-header"><div class="card-title">Clients, @Model.MonthLabel</div><span class="text-muted fs-12">Review each claim against payer policy before submitting.</span></div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered text-nowrap align-middle dt-client w-100" data-page-length="25">
+                <thead>
+                    <tr><th>Client</th><th>Payer</th><th>Completed device periods</th><th>Current period</th><th>Minutes</th><th>Live interaction</th><th>Codes ready</th><th>Est. $</th><th>Status</th><th>Actions</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in Model.Rows)
+                    {
+                        <tr>
+                            <td data-order="@r.SortName"><div class="fw-semibold">@r.Name</div><div class="text-muted fs-12">@r.Mrn &middot; @r.DiagnosisCode</div></td>
+                            <td>@r.Payer</td>
+                            <td class="text-wrap" style="min-width: 11rem;">@r.DeviceSupply</td>
+                            <td data-order="@r.DataDays">@r.DataDays @(r.DataDays == 1 ? "day" : "days")<div class="text-muted fs-12">@r.DevicePeriod</div></td>
+                            <td data-order="@r.Minutes">@r.Minutes@if (r.PendingMinutes > 0) { <span class="text-warning fs-12"> (+@r.PendingMinutes pending)</span> }</td>
+                            <td>@r.LiveInteraction</td>
+                            <td>@r.Codes</td>
+                            <td>@r.EstimatedAmount</td>
+                            <td><partial name="_Badge" model="r.Status" />@if (!string.IsNullOrEmpty(r.Issues)) { <div class="text-muted fs-12 text-wrap mt-1" style="min-width: 12rem;">@r.Issues</div> }</td>
+                            <td><a class="btn btn-sm btn-primary-light" asp-action="ClientSummary" asp-route-id="@r.ClientId" asp-route-month="@Model.Month">Documentation<span class="visually-hidden"> for @r.Name</span></a></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+        <div class="rpd-note mt-3">Codes follow the CY2026 CPT remote therapeutic monitoring rules for cognitive behavioral therapy monitoring. Device-supply codes count once their 30-day period has ended; treatment-management codes count per calendar month. This report supports documentation; it is not a claim.</div>
+    </div>
+</div>
+
+</div>
+</div>
+
+<script type="application/json" id="reportChartData">@Html.Raw(Model.ChartDataJson)</script>
+
+@section Scripts {
+    <script src="~/assets/libs/chartjs/chart.umd.js"></script>
+    <script src="~/js/shared/provider/providerCharts.js" asp-append-version="true"></script>
+    <script src="~/js/shared/provider/providerTabs.js" asp-append-version="true"></script>
+    <script src="~/js/controllers/provider/monthlyReportController.js" asp-append-version="true"></script>
+    <script nonce="@Context.GetCspNonce()">MonthlyReportController.init({ tabsId: 'reportTabs', chartDataId: 'reportChartData' });</script>
+}

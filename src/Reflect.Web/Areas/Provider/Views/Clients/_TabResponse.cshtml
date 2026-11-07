@@ -1,0 +1,78 @@
+@model ClientResponseTabViewModel
+
+<div class="row rpd-kpi-row">
+    <div class="col-6 col-lg-3"><div class="card custom-card"><div class="card-body">
+        <div class="rpd-kpi-label">Latest PHQ-9</div><div class="rpd-kpi-value">@Model.LatestPhq</div>
+        @if (Model.LatestPhqBadge != null) { <partial name="_Badge" model="Model.LatestPhqBadge" /> }</div></div></div>
+    <div class="col-6 col-lg-3"><div class="card custom-card"><div class="card-body">
+        <div class="rpd-kpi-label">Latest GAD-7</div><div class="rpd-kpi-value">@Model.LatestGad</div>
+        @if (Model.LatestGadBadge != null) { <partial name="_Badge" model="Model.LatestGadBadge" /> }</div></div></div>
+    <div class="col-12 col-lg-6"><div class="card custom-card"><div class="card-body">
+        <div class="rpd-kpi-label mb-2">Most chosen emotion words, last 30 days</div>
+        @if (Model.TopEmotions.Count == 0) { <span class="text-muted fs-13">None recorded</span> }
+        @foreach (var t in Model.TopEmotions) { <span class="rpd-tag">@t</span> }
+    </div></div></div>
+</div>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <div class="rpd-section-title mb-0">Response views</div>
+    <partial name="_ViewToggle" model='ViewToggleViewModel.Of("response", ("charts", "Charts", "ri-line-chart-line"), ("table", "Assessment history", "ri-table-line"))' />
+</div>
+
+<div data-view-panel="response:charts">
+    <div class="row">
+        <div class="col-12 col-xl-6">
+            <div class="card custom-card">
+                <div class="card-header">
+                    <div class="card-title">Before and after sessions</div>
+                    <partial name="_ViewToggle" model='ViewToggleViewModel.Of("checkin", ("mood", "Mood", "ri-emotion-line"), ("stress", "Stress", "ri-pulse-line"))' />
+                </div>
+                <div class="card-body">
+                    <div data-view-panel="checkin:mood"><div class="rpd-chart"><canvas data-chart="mood" role="img" aria-label="Line chart comparing mood before and after each Reflect session"></canvas></div></div>
+                    <div data-view-panel="checkin:stress" class="d-none"><div class="rpd-chart"><canvas data-chart="stress" role="img" aria-label="Line chart comparing stress before and after each Reflect session"></canvas></div></div>
+                    <div class="rpd-note mt-2">Self-rated 1 to 10, from @TextFormat.Count(Model.PairedCheckIns, "session") with both check-ins in the last 30 days.</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-xl-6">
+            <div class="card custom-card">
+                <div class="card-header"><div class="card-title">PHQ-9 and GAD-7 over time</div><span class="text-muted fs-12">Completed in app</span></div>
+                <div class="card-body"><div class="rpd-chart"><canvas data-chart="assessments" role="img" aria-label="Line chart of PHQ-9 and GAD-7 scores over time"></canvas></div>
+                    <div class="rpd-note mt-2">A change of 5 or more points is treated as clinically meaningful.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div data-view-panel="response:table" class="d-none">
+    <div class="card custom-card">
+        <div class="card-header"><div class="card-title">Assessment history</div></div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered text-nowrap align-middle rpd-dt w-100" data-order='[[0,"desc"]]'>
+                    <thead><tr><th>Date</th><th>Measure</th><th>Score</th><th>Severity</th><th>Change</th><th>Item 9 (self-harm)</th></tr></thead>
+                    <tbody>
+                        @foreach (var a in Model.Assessments)
+                        {
+                            <tr>
+                                <td data-order="@a.DateSort">@a.Date</td>
+                                <td>@a.Instrument</td>
+                                <td data-order="@a.Score">@a.Score <span class="text-muted">/ @a.MaxScore</span></td>
+                                <td><partial name="_Badge" model="a.Severity" /></td>
+                                <td>@a.Change</td>
+                                <td>
+                                    @if (a.Instrument != "PHQ-9") { <span class="text-muted">N/A</span> }
+                                    else if (a.SafetyEndorsed) { <span class="badge bg-danger-transparent text-danger"><i class="ri-alarm-warning-line me-1" aria-hidden="true"></i>Endorsed</span> }
+                                    else { <span class="text-muted">Not endorsed</span> }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="application/json" class="js-tab-data">@Html.Raw(Model.ChartDataJson)</script>

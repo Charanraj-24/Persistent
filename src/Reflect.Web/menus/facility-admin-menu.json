@@ -1,0 +1,20 @@
+[
+    {
+        "isCategory": true,
+        "label": "Remote monitoring"
+    },
+    {
+        "label": "RTM billing by provider",
+        "url": "/Provider/FacilityBilling/Index",
+        "icon": "ri-money-dollar-box-line"
+    },
+    {
+        "isCategory": true,
+        "label": "Compliance"
+    },
+    {
+        "label": "Access audit log",
+        "url": "/Provider/AccessLog/Index",
+        "icon": "ri-file-shield-2-line"
+    }
+]

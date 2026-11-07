@@ -1,0 +1,171 @@
+@model LiveDemoViewModel
+@using Reflect.Web.Models.ViewModels.ProviderDashboard.Live
+@{
+    ViewData["Title"] = "Live data demo";
+    var baseUrl = $"{Context.Request.Scheme}://{Context.Request.Host}";
+}
+@section Styles { <partial name="_ProviderStyles" /> }
+
+<div class="rpd-page-header">
+    <div>
+        <h1 class="page-title mb-1">Live data demo</h1>
+        <p class="text-muted fs-13 mb-0">Send the same data Reflect XR and Reflect Mobile would send, and watch the dashboard update. Synthetic only.</p>
+    </div>
+    <div class="rpd-page-actions">
+        <span id="liveIndicator" class="rpd-live-pill"><span class="rpd-live-dot" aria-hidden="true"></span><span class="js-live-text">Connecting...</span></span>
+    </div>
+</div>
+
+<div class="card custom-card rpd-qr-card" id="qrCard"
+     data-start-url="@Url.Action("StartCheckIn", "Live")" data-stop-url="@Url.Action("StopCheckIn", "Live")" data-status-url="@Url.Action("CheckInStatus", "Live")">
+    <div class="card-body">
+        <div class="rpd-qr-layout">
+            <div class="rpd-qr-intro">
+                <div class="rpd-section-title mb-1"><i class="ri-qr-code-line me-1" aria-hidden="true"></i>Audience check-in</div>
+                <h2 class="rpd-qr-heading">Let the room be the client</h2>
+                <p class="fs-13 text-muted mb-3">Show a QR code. Anyone in the room can scan it and send a 20-second Reflect check-in (activity, mood before and after, emotion words) to one demo client you choose. Their check-ins appear in the feed and on that client's page within seconds. Phones never see the client's name.</p>
+                <div class="d-flex flex-wrap gap-2 align-items-end js-qr-setup">
+                    <div class="flex-grow-1">
+                        <label for="qrClient" class="form-label">Demo client</label>
+                        <select id="qrClient" class="form-select" asp-items="Model.ClientOptions"></select>
+                    </div>
+                    <button type="button" class="btn btn-primary js-qr-start"><i class="ri-qr-code-line me-1" aria-hidden="true"></i>Show QR code</button>
+                </div>
+                <div class="js-qr-running d-none">
+                    <div class="rpd-qr-stats">
+                        <div><div class="rpd-qr-stat js-qr-count">0</div><div class="text-muted fs-12">check-ins</div></div>
+                        <div><div class="rpd-qr-stat js-qr-left">30:00</div><div class="text-muted fs-12">until the code expires</div></div>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 mt-3">
+                        <a class="btn btn-outline-secondary js-qr-client" href="#"><i class="ri-user-heart-line me-1" aria-hidden="true"></i>Open client</a>
+                        <button type="button" class="btn btn-outline-secondary js-qr-full"><i class="ri-fullscreen-line me-1" aria-hidden="true"></i>Present full screen</button>
+                        <button type="button" class="btn btn-outline-secondary js-qr-stop"><i class="ri-stop-circle-line me-1" aria-hidden="true"></i>Stop</button>
+                    </div>
+                    <div class="rpd-flag mt-3 d-none js-qr-local"><i class="ri-error-warning-line rpd-flag-icon text-warning" aria-hidden="true"></i>
+                        <div class="fs-13">Phones can't reach <code>localhost</code>. Open this page through your public or tunnel URL, or set <code>Demo:PublicBaseUrl</code>. See the README, "Audience check-in".</div></div>
+                </div>
+            </div>
+            <div class="rpd-qr-stage js-qr-stage d-none" aria-live="polite">
+                <div class="rpd-qr-code js-qr-code" role="img" aria-label="QR code for the check-in page"></div>
+                <div class="rpd-qr-join"><span class="text-muted fs-12">or go to</span> <span class="js-qr-host fw-semibold"></span><span class="text-muted fs-12"> and enter</span></div>
+                <div class="rpd-qr-codetext js-qr-codetext"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12 col-xl-6">
+        <div class="card custom-card">
+            <div class="card-header"><div class="card-title"><i class="ri-play-circle-line me-1" aria-hidden="true"></i>Send an app event</div></div>
+            <div class="card-body">
+                <label for="liveClient" class="form-label">Client</label>
+                <select id="liveClient" class="form-select mb-3" asp-items="Model.ClientOptions"></select>
+                <div class="rpd-scenarios">
+                    @foreach (var s in Model.Scenarios)
+                    {
+                        <button type="button" class="rpd-scenario js-run-scenario @(s.IsSafety ? "is-safety" : null)" data-scenario="@s.Key">
+                            <i class="@s.Icon" aria-hidden="true"></i>
+                            <span><span class="d-block fw-semibold">@s.Label</span><span class="d-block fs-12 text-muted">@s.Description</span></span>
+                        </button>
+                    }
+                </div>
+                <div class="rpd-note mt-3">Tip: keep the dashboard or this client's page open in another window. New data shows up within a few seconds.</div>
+            </div>
+        </div>
+
+        <div class="card custom-card">
+            <div class="card-header"><div class="card-title"><i class="ri-radar-line me-1" aria-hidden="true"></i>Auto-simulator</div>
+                @if (Model.SimulatorEnabled) { <span class="badge bg-success-transparent text-success"><i class="ri-play-circle-line me-1" aria-hidden="true"></i>Running</span> }
+                else { <span class="badge bg-info-transparent text-info"><i class="ri-stop-circle-line me-1" aria-hidden="true"></i>Stopped</span> }
+            </div>
+            <div class="card-body">
+                <p class="fs-13">Generates realistic sessions, check-ins, assessments and heart-rate readings for random clients in your caseload. It never sends safety (item 9) events on its own. @Model.EventsSent events sent since the app started.</p>
+                <form asp-action="Simulator" method="post" class="d-flex flex-wrap gap-2 align-items-end">
+                    <input type="hidden" name="enable" value="@(Model.SimulatorEnabled ? "false" : "true")" />
+                    @if (!Model.SimulatorEnabled)
+                    {
+                        <div>
+                            <label for="intervalSeconds" class="form-label">Every</label>
+                            <select id="intervalSeconds" name="intervalSeconds" class="form-select">
+                                <option value="5">5 seconds</option>
+                                <option value="8" selected>8 seconds</option>
+                                <option value="15">15 seconds</option>
+                                <option value="30">30 seconds</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary"><i class="ri-play-circle-line me-1" aria-hidden="true"></i>Start simulator</button>
+                    }
+                    else
+                    {
+                        <input type="hidden" name="intervalSeconds" value="@Model.IntervalSeconds" />
+                        <button type="submit" class="btn btn-outline-secondary"><i class="ri-stop-circle-line me-1" aria-hidden="true"></i>Stop simulator</button>
+                    }
+                </form>
+            </div>
+        </div>
+
+        <div class="card custom-card">
+            <div class="card-header"><div class="card-title"><i class="ri-code-s-slash-line me-1" aria-hidden="true"></i>Ingestion API for the Reflect apps</div>
+                @if (Model.ApiConfigured) { <span class="badge bg-success-transparent text-success"><i class="ri-checkbox-circle-line me-1" aria-hidden="true"></i>Enabled</span> }
+                else { <span class="badge bg-warning-transparent text-warning"><i class="ri-error-warning-line me-1" aria-hidden="true"></i>Set Ingest:ApiKey</span> }
+            </div>
+            <div class="card-body">
+                <p class="fs-13 mb-2">Endpoints: <code>POST /api/ingest/sessions</code>, <code>/assessments</code>, <code>/observations</code>, with header <code>X-Reflect-Ingest-Key</code>. Example for @Model.SampleClientName:</p>
+                <pre class="rpd-code-block"><code>curl -X POST @baseUrl/api/ingest/sessions \
+  -H "Content-Type: application/json" \
+  -H "X-Reflect-Ingest-Key: $INGEST_KEY" \
+  -d '{"clientUserId":"@Model.SampleClientUserId","platform":"xr",
+       "moduleKey":"xr-flow","moodBefore":4,"moodAfter":7,
+       "emotionTags":["calm","hopeful"]}'</code></pre>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-xl-6">
+        <div class="card custom-card">
+            <div class="card-header"><div class="card-title"><i class="ri-broadcast-line me-1" aria-hidden="true"></i>Incoming data</div><span class="text-muted fs-12">Newest first</span></div>
+            <div class="card-body">
+                <ul class="rpd-list" id="liveLog" aria-live="polite">
+                    @foreach (var e in Model.RecentEvents)
+                    {
+                        <li class="@(e.IsUrgent ? "rpd-live-urgent" : null)">
+                            <span class="avatar avatar-sm avatar-rounded">@e.Initials</span>
+                            <div class="flex-grow-1 min-w-0">
+                                <div class="d-flex flex-wrap justify-content-between gap-1">
+                                    <a class="rpd-name" asp-controller="Clients" asp-action="Details" asp-route-id="@e.ClientId">@e.Name</a>
+                                    <span class="text-muted fs-12">@e.When &middot; @e.Source</span>
+                                </div>
+                                <div class="fs-13">@if (e.IsUrgent) { <i class="ri-alarm-warning-line text-danger me-1" aria-hidden="true"></i><span class="visually-hidden">Urgent: </span> }@e.Summary</div>
+                            </div>
+                        </li>
+                    }
+                </ul>
+                <div id="liveEmpty" class="rpd-empty @(Model.RecentEvents.Count > 0 ? "d-none" : null)"><i class="ri-broadcast-line" aria-hidden="true"></i>No incoming data yet. Send an event or start the simulator.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form id="antiForgeryForm" class="d-none" method="post">@Html.AntiForgeryToken()</form>
+
+@section Scripts {
+    <script src="~/js/shared/provider/liveFeed.js" asp-append-version="true"></script>
+    <script src="~/js/services/provider/liveDemoService.js" asp-append-version="true"></script>
+    <script src="~/assets/libs/qrcode-generator/qrcode.js"></script>
+    <script src="~/js/services/provider/checkInService.js" asp-append-version="true"></script>
+    <script src="~/js/controllers/provider/liveDemoController.js" asp-append-version="true"></script>
+    <script src="~/js/controllers/provider/qrCheckInController.js" asp-append-version="true"></script>
+    <script nonce="@Context.GetCspNonce()">
+        LiveDemoController.init({
+            feedUrl: '@Url.Action("Feed", "Live")',
+            runUrl: '@Url.Action("RunScenario", "Live")',
+            clientUrlTemplate: '@Url.Action("Details", "Clients", new { id = "__id__" })',
+            token: document.querySelector('#antiForgeryForm input[name="__RequestVerificationToken"]').value
+        });
+        QrCheckInController.init({
+            token: document.querySelector('#antiForgeryForm input[name="__RequestVerificationToken"]').value,
+            clientUrlTemplate: '@Url.Action("Details", "Clients", new { id = "__id__" })'
+        });
+    </script>
+}

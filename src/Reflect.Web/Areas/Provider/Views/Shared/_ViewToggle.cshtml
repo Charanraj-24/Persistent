@@ -1,0 +1,11 @@
+@model ViewToggleViewModel
+@* Switches between alternative views of the same data inside one card or tab (for example charts vs. table). *@
+<div class="btn-group btn-group-sm rpd-view-toggle" role="group" aria-label="@Model.AriaLabel" data-view-group="@Model.Group">
+    @for (var i = 0; i < Model.Options.Count; i++)
+    {
+        var o = Model.Options[i];
+        <button type="button" class="btn btn-outline-secondary js-view-toggle @(i == 0 ? "active" : null)" data-view-group="@Model.Group" data-view="@o.Key" aria-pressed="@(i == 0 ? "true" : "false")">
+            <i class="@o.Icon me-1" aria-hidden="true"></i>@o.Label
+        </button>
+    }
+</div>

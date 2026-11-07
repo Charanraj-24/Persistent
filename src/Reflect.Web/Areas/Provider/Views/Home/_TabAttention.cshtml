@@ -1,0 +1,63 @@
+@model DashboardAttentionTabViewModel
+
+<div class="row">
+    <div class="col-12 col-xl-7">
+        <div class="card custom-card">
+            <div class="card-header"><div class="card-title"><i class="ri-stethoscope-line me-1" aria-hidden="true"></i>Needs clinical attention</div><span class="text-muted fs-12">Safety first, then trends</span></div>
+            <div class="card-body">
+                @if (Model.Attention.Count == 0)
+                {
+                    <div class="rpd-empty"><i class="ri-emotion-happy-line" aria-hidden="true"></i>No flags right now.</div>
+                }
+                else
+                {
+                    <ul class="rpd-list">
+                        @foreach (var a in Model.Attention)
+                        {
+                            <li>
+                                <span class="avatar avatar-rounded">@a.Initials</span>
+                                <div class="flex-grow-1 min-w-0">
+                                    <div class="d-flex flex-wrap justify-content-between gap-1">
+                                        <a class="rpd-name" asp-controller="Clients" asp-action="Details" asp-route-id="@a.ClientId">@a.Name</a>
+                                        <span class="badge bg-@(a.Flag.Color)-transparent text-@(a.Flag.Color)"><i class="@a.Flag.Icon me-1" aria-hidden="true"></i>@a.Flag.SeverityLabel: @a.Flag.Title</span>
+                                    </div>
+                                    <div class="text-muted fs-13">@a.Flag.Detail @if (a.MoreCount > 0) { <span>(+@a.MoreCount more)</span> }</div>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-xl-5">
+        <div class="card custom-card">
+            <div class="card-header"><div class="card-title"><i class="ri-arrow-down-line me-1" aria-hidden="true"></i>Showing progress</div></div>
+            <div class="card-body">
+                @if (Model.Progress.Count == 0)
+                {
+                    <div class="rpd-empty">No progress flags yet.</div>
+                }
+                else
+                {
+                    <ul class="rpd-list">
+                        @foreach (var a in Model.Progress.Take(6))
+                        {
+                            <li>
+                                <span class="avatar avatar-sm avatar-rounded">@a.Initials</span>
+                                <div class="flex-grow-1 min-w-0">
+                                    <a class="rpd-name" asp-controller="Clients" asp-action="Details" asp-route-id="@a.ClientId">@a.Name</a>
+                                    <div class="text-muted fs-13">@a.Flag.Detail</div>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                    @if (Model.Progress.Count > 6)
+                    {
+                        <div class="rpd-note mt-2">And @TextFormat.Count(Model.Progress.Count - 6, "more client"). See the Clients list for everyone.</div>
+                    }
+                }
+            </div>
+        </div>
+    </div>
+</div>

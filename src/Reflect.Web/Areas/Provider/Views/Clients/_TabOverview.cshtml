@@ -1,0 +1,91 @@
+@model ClientOverviewTabViewModel
+@using System.Globalization
+@{ var s = Model.Summary; }
+
+<div class="row">
+    <div class="col-12 col-xl-7">
+        <div class="card custom-card">
+            <div class="card-header"><div class="card-title"><i class="ri-chat-quote-line me-1" aria-hidden="true"></i>Talking points for your next session</div></div>
+            <div class="card-body">
+                @if (Model.TalkingPoints.Count == 0)
+                {
+                    <div class="rpd-empty">Not enough recent data yet.</div>
+                }
+                else
+                {
+                    <ol class="rpd-talking-points">
+                        @foreach (var tp in Model.TalkingPoints) { <li>@tp</li> }
+                    </ol>
+                }
+                <div class="rpd-note mt-2">Generated from the client's Reflect activity, check-ins and assessments. Use your clinical judgment.</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-xl-5">
+        <div class="card custom-card">
+            <div class="card-header"><div class="card-title"><i class="ri-flag-line me-1" aria-hidden="true"></i>Clinical flags</div></div>
+            <div class="card-body">
+                @if (Model.Flags.Count == 0)
+                {
+                    <div class="rpd-empty"><i class="ri-checkbox-circle-line" aria-hidden="true"></i>No flags.</div>
+                }
+                @foreach (var f in Model.Flags)
+                {
+                    <div class="rpd-flag rpd-flag-@f.Color">
+                        <i class="@f.Icon rpd-flag-icon text-@f.Color" aria-hidden="true"></i>
+                        <div><div class="rpd-flag-title">@f.SeverityLabel: @f.Title</div><div class="fs-13">@f.Detail</div></div>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="rpd-statstrip" role="group" aria-label="Last 30 days at a glance">
+    <div class="rpd-stat">
+        <div class="rpd-stat-label"><i class="ri-calendar-line" aria-hidden="true"></i>Sessions, last 30 days</div>
+        <div class="rpd-stat-value">@s.Sessions</div>
+        <div class="rpd-stat-note">@TextFormat.Count(s.ActiveDays, "active day")</div>
+    </div>
+    <div class="rpd-stat">
+        <div class="rpd-stat-label"><i class="ri-time-line" aria-hidden="true"></i>Time in Reflect</div>
+        <div class="rpd-stat-value">@s.TotalMinutes.ToString("0", CultureInfo.InvariantCulture)<small>min</small></div>
+        <div class="rpd-stat-note">@s.AverageSessionMinutes.ToString("0", CultureInfo.InvariantCulture) min per session</div>
+    </div>
+    <div class="rpd-stat">
+        <div class="rpd-stat-label"><i class="ri-goggles-line" aria-hidden="true"></i>In VR</div>
+        <div class="rpd-stat-value">@((s.XrShare * 100).ToString("0", CultureInfo.InvariantCulture))<small>%</small></div>
+        <div class="rpd-stat-note">@s.XrMinutes.ToString("0", CultureInfo.InvariantCulture) min XR, @s.MobileMinutes.ToString("0", CultureInfo.InvariantCulture) min Mobile</div>
+    </div>
+    <div class="rpd-stat">
+        <div class="rpd-stat-label"><i class="ri-emotion-line" aria-hidden="true"></i>Mood change per session</div>
+        <div class="rpd-stat-value">@(s.AverageMoodChange.HasValue ? (s.AverageMoodChange.Value >= 0 ? "+" : "") + s.AverageMoodChange.Value.ToString("0.0", CultureInfo.InvariantCulture) : "-")</div>
+        <div class="rpd-stat-note">Most used: @Model.TopModuleName</div>
+    </div>
+</div>
+
+<div class="card custom-card">
+    <div class="card-header">
+        <div class="card-title">Time in Reflect, last 30 days</div>
+        <partial name="_ViewToggle" model='ViewToggleViewModel.Of("overview", ("daily", "By day", "ri-bar-chart-box-line"), ("split", "By app", "ri-pie-chart-line"))' />
+    </div>
+    <div class="card-body">
+        <div data-view-panel="overview:daily"><div class="rpd-chart"><canvas data-chart="dailyMinutes" role="img" aria-label="Stacked bar chart of daily minutes in Reflect XR and Reflect Mobile for the last 30 days"></canvas></div></div>
+        <div data-view-panel="overview:split" class="d-none"><div class="rpd-chart"><canvas data-chart="platformSplit" role="img" aria-label="Doughnut chart of total minutes in Reflect XR versus Reflect Mobile"></canvas></div></div>
+    </div>
+</div>
+
+<div class="card custom-card">
+    <div class="card-header"><div class="card-title">Client details</div></div>
+    <div class="card-body">
+        <dl class="rpd-facts">
+            <div><dt>Date of birth</dt><dd>@Model.DateOfBirth</dd></div>
+            <div><dt>Payer</dt><dd>@Model.Payer</dd></div>
+            <div><dt>RTM consent</dt><dd>@Model.ConsentDate</dd></div>
+            <div><dt>RTM start</dt><dd>@Model.RtmStartDate</dd></div>
+            <div><dt>Treatment goals</dt><dd class="fw-normal">@Model.Goals</dd></div>
+        </dl>
+    </div>
+</div>
+
+<script type="application/json" class="js-tab-data">@Html.Raw(Model.ChartDataJson)</script>

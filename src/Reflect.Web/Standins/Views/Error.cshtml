@@ -1,0 +1,21 @@
+@* STAND-IN: generic error page used by UseExceptionHandler outside Development. Shows no exception details. *@
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en" data-theme-mode="light">
+<head>
+    <partial name="~/Views/CheckIn/_CheckInHead.cshtml" />
+    <title>Something went wrong - Reflect XR</title>
+</head>
+<body class="ci-body">
+    <main class="ci">
+        <header class="ci-hero"><div class="ci-brand"><partial name="~/Standins/Views/_BrandMark.cshtml" /><span>Reflect XR</span></div></header>
+        <section class="ci-card text-center">
+            <h1 class="ci-title ci-title-dark">Something went wrong</h1>
+            <p class="text-muted">The error was logged. Please go back and try again.</p>
+            <a class="btn btn-primary" href="/">Go to the dashboard</a>
+        </section>
+    </main>
+</body>
+</html>

@@ -1,0 +1,87 @@
+@* STAND-IN sign-in portal for the isolated demo. Delete on merge: Reflect XR signs in with Microsoft Entra External ID. *@
+@model Reflect.Web.Standins.Controllers.LoginViewModel
+@using Reflect.Web.Standins.Security
+@{
+    Layout = null;
+    var nonce = Context.GetCspNonce();
+}
+<!DOCTYPE html>
+<html lang="en" data-theme-mode="light">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sign in - Reflect XR</title>
+    <script nonce="@nonce">
+        (function () { try { var d = document.documentElement, ls = window.localStorage;
+            var t = ls.getItem('reflect-theme'); if (t === 'dark' || t === 'light') d.setAttribute('data-theme-mode', t);
+            var s = parseInt(ls.getItem('reflect-text-size'), 10); if (s >= 80 && s <= 150) d.style.fontSize = s + '%';
+        } catch (e) { } })();
+    </script>
+    <link rel="stylesheet" href="~/assets/libs/bootstrap/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/assets/libs/remixicon/remixicon.css" />
+    <link rel="stylesheet" href="~/standins/css/theme-standin.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/standins/css/login.css" asp-append-version="true" />
+</head>
+<body class="signin-body">
+    <main class="signin">
+        <section class="signin-art" aria-hidden="true">
+            <div class="signin-brand"><partial name="~/Standins/Views/_BrandMark.cshtml" /><span>Reflect XR</span></div>
+            <div class="signin-art-copy">
+                <p class="signin-art-title">See what happens between sessions.</p>
+                <p class="signin-art-text">Engagement, mood and progress from Reflect XR and Reflect Mobile, and the review time you can bill for.</p>
+            </div>
+        </section>
+
+        <section class="signin-panel">
+            <div class="signin-form-wrap">
+                <img class="signin-logo" src="~/images/brand/reflect-xr-logo.png" alt="Reflect XR by Persistent Technology" width="111" height="126" />
+                <h1 class="signin-title">Sign in to the provider dashboard</h1>
+                <p class="signin-lead">Use the account your clinic set up for you.</p>
+
+                @if (Model.TimedOut)
+                {
+                    <div class="signin-alert is-info" role="status"><i class="ri-time-line" aria-hidden="true"></i><span>You were signed out after 30 minutes without activity.</span></div>
+                }
+                @if (!string.IsNullOrEmpty(Model.Error))
+                {
+                    <div class="signin-alert is-error" role="alert"><i class="ri-error-warning-line" aria-hidden="true"></i><span>@Model.Error</span></div>
+                }
+
+                <form asp-controller="StandinAccount" asp-action="Login" method="post" novalidate>
+                    <input type="hidden" asp-for="ReturnUrl" />
+                    <div class="mb-3">
+                        <label asp-for="Email" class="form-label">Email</label>
+                        <input asp-for="Email" type="email" class="form-control form-control-lg" autocomplete="username" required autofocus />
+                    </div>
+                    <div class="mb-4">
+                        <label asp-for="Password" class="form-label">Password</label>
+                        <div class="signin-password">
+                            <input asp-for="Password" type="password" class="form-control form-control-lg" autocomplete="current-password" required />
+                            <button type="button" class="signin-reveal js-toggle-password" aria-label="Show password" aria-pressed="false"><i class="ri-eye-line" aria-hidden="true"></i></button>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-lg w-100"><i class="ri-login-box-line me-1" aria-hidden="true"></i>Sign in</button>
+                </form>
+
+                <p class="signin-note"><i class="ri-shield-check-line" aria-hidden="true"></i>In the live Reflect XR app you sign in with your organization's Microsoft account. You'll be signed out after 30 minutes without activity.</p>
+
+                <div class="signin-demo">
+                    <div class="signin-demo-head">
+                        <span class="fw-semibold">Demo accounts</span>
+                        <span class="text-muted fs-12">Password: <code>@Model.DemoPassword</code></span>
+                    </div>
+                    @foreach (var u in DemoUsers.All)
+                    {
+                        <button type="button" class="signin-demo-user js-fill-account" data-email="@u.Email">
+                            <span class="avatar avatar-sm avatar-rounded">@string.Concat(u.DisplayName.Replace("Dr. ", string.Empty).Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(s => s[0]))</span>
+                            <span class="flex-grow-1 text-start"><span class="d-block fw-semibold">@u.DisplayName</span><span class="d-block fs-12 text-muted">@u.Description</span></span>
+                            <i class="ri-arrow-right-s-line" aria-hidden="true"></i>
+                        </button>
+                    }
+                </div>
+            </div>
+        </section>
+    </main>
+    <script src="~/standins/js/login.js" asp-append-version="true"></script>
+</body>
+</html>

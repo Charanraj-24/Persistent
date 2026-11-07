@@ -1,0 +1,80 @@
+@model ClientEngagementTabViewModel
+@using System.Globalization
+@{ var s = Model.Summary; }
+
+<div class="rpd-statstrip" role="group" aria-label="Engagement summary">
+    <div class="rpd-stat"><div class="rpd-stat-label"><i class="ri-history-line" aria-hidden="true"></i>Last session</div><div class="rpd-stat-value fs-16">@Model.LastSession</div></div>
+    <div class="rpd-stat"><div class="rpd-stat-label"><i class="ri-calendar-line" aria-hidden="true"></i>Sessions, last 14 days</div><div class="rpd-stat-value">@s.SessionsLast14Days</div><div class="rpd-stat-note">Prior 14 days: @s.SessionsPrior14Days</div></div>
+    <div class="rpd-stat"><div class="rpd-stat-label"><i class="ri-checkbox-circle-line" aria-hidden="true"></i>Completion rate</div><div class="rpd-stat-value">@((s.CompletionRate * 100).ToString("0", CultureInfo.InvariantCulture))%</div><div class="rpd-stat-note">Most used: @Model.TopModuleName</div></div>
+    <div class="rpd-stat @(Model.LateNight14 >= Reflect.Domain.ProviderDashboard.Clinical.EngagementAnalyzer.LateNightFlagThreshold ? "is-alert" : null)"><div class="rpd-stat-label"><i class="ri-moon-clear-line" aria-hidden="true"></i>Usually uses Reflect</div><div class="rpd-stat-value fs-16">@Model.PeakTime</div>
+        <div class="rpd-stat-note">@(Model.LateNight14 == 0 ? "No late-night use in 14 days" : $"{TextFormat.Count(Model.LateNight14, "session")} between 12 and 5 AM in 14 days")</div></div>
+    <div class="rpd-stat @(Model.TutorialMissing ? "is-alert" : null)"><div class="rpd-stat-label"><i class="ri-graduation-cap-line" aria-hidden="true"></i>XR Training Tutorial</div><div class="rpd-stat-value fs-16">@Model.Tutorial</div>
+        <div class="rpd-stat-note">@(Model.TutorialMissing ? "Check they know how to use the headset" : "Getting Started module")</div></div>
+</div>
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <div class="rpd-section-title mb-0">Engagement views</div>
+    <partial name="_ViewToggle" model='ViewToggleViewModel.Of("engagement", ("charts", "Charts", "ri-line-chart-line"), ("table", "Session log", "ri-table-line"))' />
+</div>
+
+<div data-view-panel="engagement:charts">
+    <div class="row">
+        <div class="col-12 col-xl-6">
+            <div class="card custom-card">
+                <div class="card-header"><div class="card-title">Weekly trend, last 12 weeks</div><span class="text-muted fs-12">Minutes per week by app</span></div>
+                <div class="card-body"><div class="rpd-chart"><canvas data-chart="weeklyTrend" role="img" aria-label="Line chart of weekly minutes in Reflect XR and Reflect Mobile over 12 weeks"></canvas></div></div>
+            </div>
+        </div>
+        <div class="col-12 col-xl-6">
+            <div class="card custom-card">
+                <div class="card-header"><div class="card-title">Where they spend their time, last 30 days</div>
+                    <partial name="_ViewToggle" model='ViewToggleViewModel.Of("modview", ("module", "By module", "ri-apps-2-line"), ("group", "By group", "ri-folders-line"))' /></div>
+                <div class="card-body">
+                    <div data-view-panel="modview:module"><div class="rpd-chart rpd-chart-tall"><canvas data-chart="modules" role="img" aria-label="Bar chart of minutes in each Reflect module for the last 30 days"></canvas></div></div>
+                    <div data-view-panel="modview:group" class="d-none"><div class="rpd-chart"><canvas data-chart="groups" role="img" aria-label="Bar chart of minutes in each Reflect module group for the last 30 days"></canvas></div></div>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-xl-6">
+            <div class="card custom-card">
+                <div class="card-header"><div class="card-title">Time of day, last 30 days</div><span class="text-muted fs-12">US Eastern</span></div>
+                <div class="card-body"><div class="rpd-chart rpd-chart-sm"><canvas data-chart="timeOfDay" role="img" aria-label="Bar chart of sessions by time of day"></canvas></div></div>
+            </div>
+        </div>
+        <div class="col-12 col-xl-6">
+            <div class="card custom-card">
+                <div class="card-header"><div class="card-title">Day of week, last 30 days</div></div>
+                <div class="card-body"><div class="rpd-chart rpd-chart-sm"><canvas data-chart="weekday" role="img" aria-label="Bar chart of sessions by day of week"></canvas></div></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div data-view-panel="engagement:table" class="d-none">
+    <div class="card custom-card">
+        <div class="card-header"><div class="card-title">Session log, last 90 days</div></div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered text-nowrap align-middle rpd-dt w-100" data-order='[[0,"desc"]]'>
+                    <thead><tr><th>Date and time</th><th>App</th><th>Module</th><th>Minutes</th><th>Completed</th><th>Mood before to after</th><th>Emotion words</th></tr></thead>
+                    <tbody>
+                        @foreach (var r in Model.Sessions)
+                        {
+                            <tr>
+                                <td data-order="@r.WhenSort">@r.When</td>
+                                <td><i class="@r.PlatformIcon me-1" aria-hidden="true"></i>@r.PlatformLabel</td>
+                                <td>@r.ModuleName</td>
+                                <td>@r.Minutes</td>
+                                <td>@if (r.Completed) { <span><i class="ri-check-line text-success me-1" aria-hidden="true"></i>Yes</span> } else { <span class="text-muted"><i class="ri-subtract-line me-1" aria-hidden="true"></i>No</span> }</td>
+                                <td data-order="@r.MoodChangeSort">@r.MoodChange</td>
+                                <td>@r.Emotions</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="application/json" class="js-tab-data">@Html.Raw(Model.ChartDataJson)</script>

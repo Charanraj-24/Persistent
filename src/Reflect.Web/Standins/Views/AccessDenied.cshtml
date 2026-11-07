@@ -1,0 +1,12 @@
+@* STAND-IN: Access denied page. Delete on merge (the shared sign-in area has the real one). *@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Access denied";
+}
+<div class="card custom-card mx-auto mt-4" style="max-width: 36rem;">
+    <div class="card-body text-center p-5">
+        <i class="ri-lock-line fs-30 text-danger" aria-hidden="true"></i>
+        <h1 class="page-title mt-3 mb-2">Access denied</h1>
+        <p class="text-muted mb-4">Your account doesn't have access to the Provider dashboard. Switch to a provider test user from the profile menu.</p>
+    </div>
+</div>

@@ -1,0 +1,105 @@
+@model DashboardUsageTabViewModel
+@* Module usage explorer. Everything below the filters is drawn in the browser from the JSON at the bottom (moduleUsageController.js). *@
+<div class="rpd-usage" id="usageExplorer" data-client-url="@Url.Action("Details", "Clients", new { id = "__id__" })">
+    <div class="card custom-card">
+        <div class="card-body">
+            <div class="rpd-usage-filters" role="group" aria-label="Usage filters">
+                <div class="rpd-usage-field">
+                    <span class="rpd-usage-label" id="usageViewLabel">Look at</span>
+                    <div class="btn-group" role="radiogroup" aria-labelledby="usageViewLabel">
+                        <button type="button" class="btn btn-sm btn-outline-secondary js-usage-view" data-view="module" role="radio"><i class="ri-apps-2-line me-1" aria-hidden="true"></i>Modules: who uses each</button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary js-usage-view" data-view="client" role="radio"><i class="ri-user-star-line me-1" aria-hidden="true"></i>Clients: what each uses</button>
+                    </div>
+                </div>
+                <div class="rpd-usage-field">
+                    <label class="rpd-usage-label" for="usagePeriod">Period</label>
+                    <select class="form-select form-select-sm js-usage-filter" id="usagePeriod" data-key="window">
+                        <option value="0">Last 7 days</option>
+                        <option value="1">Last 30 days</option>
+                        <option value="2">Last 90 days</option>
+                    </select>
+                </div>
+                <div class="rpd-usage-field">
+                    <label class="rpd-usage-label" for="usagePlatform">App</label>
+                    <select class="form-select form-select-sm js-usage-filter" id="usagePlatform" data-key="platform">
+                        <option value="">Both apps</option>
+                        <option value="xr">Reflect XR</option>
+                        <option value="mobile">Reflect Mobile</option>
+                    </select>
+                </div>
+                <div class="rpd-usage-field">
+                    <label class="rpd-usage-label" for="usageGroup">Group</label>
+                    <select class="form-select form-select-sm js-usage-filter" id="usageGroup" data-key="group"></select>
+                </div>
+                <div class="rpd-usage-field">
+                    <label class="rpd-usage-label" for="usageMeasure">Measure</label>
+                    <select class="form-select form-select-sm js-usage-filter" id="usageMeasure" data-key="measure">
+                        <option value="min">Minutes</option>
+                        <option value="ses">Sessions</option>
+                    </select>
+                </div>
+                <div class="rpd-usage-field rpd-usage-search">
+                    <label class="rpd-usage-label" for="usageSearch">Find</label>
+                    <input type="search" class="form-control form-control-sm js-usage-filter" id="usageSearch" data-key="q" placeholder="Client or module" autocomplete="off" />
+                </div>
+                <button type="button" class="btn btn-sm btn-link js-usage-reset">Reset</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12 col-xl-5">
+            <div class="card custom-card">
+                <div class="card-header">
+                    <div class="card-title js-usage-left-title">Most used modules</div>
+                    <select class="form-select form-select-sm w-auto js-usage-filter" data-key="leftSort" aria-label="Sort the list">
+                        <option value="value">Most used first</option>
+                        <option value="reach">Most clients first</option>
+                        <option value="recent">Most recent first</option>
+                        <option value="name">A to Z</option>
+                    </select>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="rpd-usage-list js-usage-left" role="listbox" aria-label="Pick one to see the breakdown"></ul>
+                </div>
+            </div>
+        </div>
+        <div class="col-12 col-xl-7">
+            <div class="card custom-card">
+                <div class="card-header">
+                    <div>
+                        <div class="card-title js-usage-right-title">Who uses it most</div>
+                        <div class="text-muted fs-12 js-usage-right-sub"></div>
+                    </div>
+                    <select class="form-select form-select-sm w-auto js-usage-filter" data-key="rightSort" aria-label="Sort the breakdown">
+                        <option value="value">Most used first</option>
+                        <option value="share">Biggest share of their time</option>
+                        <option value="recent">Most recent first</option>
+                        <option value="name">A to Z</option>
+                    </select>
+                </div>
+                <div class="card-body">
+                    <div class="js-usage-right" aria-live="polite"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card custom-card">
+        <div class="card-header">
+            <div>
+                <div class="card-title">Usage map: every client by <span class="js-usage-map-axis">group</span></div>
+                <div class="text-muted fs-12">Darker means more. Click a column to sort. Pick a group above to see its modules.</div>
+            </div>
+            <span class="text-muted fs-12 js-usage-updated">Live. Updates when new Reflect data arrives.</span>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive rpd-usage-mapwrap">
+                <table class="table table-sm align-middle mb-0 rpd-usage-map js-usage-map"></table>
+            </div>
+        </div>
+    </div>
+    <div class="rpd-note mb-3">@Model.ClientCount clients, @Model.ModulesUsed of @Reflect.Domain.ProviderDashboard.ModuleCatalog.All.Count modules used in the last 90 days, as of @Model.AsOf. Module names follow PTI's official catalog.</div>
+</div>
+
+<script type="application/json" class="js-tab-data">@Html.Raw(Model.DataJson)</script>

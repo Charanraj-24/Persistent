@@ -1,0 +1,80 @@
+@model Reflect.Web.Models.ViewModels.CheckIn.PhoneCheckInViewModel
+@using Reflect.Web.Standins.Security
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="en" data-theme-mode="light">
+<head>
+    <partial name="_CheckInHead" />
+    <title>Reflect check-in</title>
+</head>
+<body class="ci-body">
+    <main class="ci">
+        <header class="ci-hero">
+            <div class="ci-brand"><partial name="~/Standins/Views/_BrandMark.cshtml" /><span>Reflect</span></div>
+            <h1 class="ci-title">How was your session?</h1>
+            <p class="ci-lead">A 20-second check-in, like the one in Reflect Mobile. Your answers appear on the provider's screen for a demo client. No name or account needed.</p>
+        </header>
+
+        <section class="ci-card">
+            @if (!string.IsNullOrEmpty(Model.Error))
+            {
+                <div class="ci-alert" role="alert"><i class="ri-error-warning-line" aria-hidden="true"></i><span>@Model.Error</span></div>
+            }
+
+            @if (!Model.CodeValid)
+            {
+                <form method="get" action="/checkin" class="ci-form">
+                    <label for="code" class="form-label fw-semibold">Enter the code on the screen</label>
+                    <input id="code" name="code" class="form-control form-control-lg ci-code-input" maxlength="6" autocomplete="off" autocapitalize="characters" spellcheck="false" inputmode="text" value="@Model.Code" required />
+                    <button type="submit" class="btn btn-primary btn-lg w-100 mt-3">Continue</button>
+                </form>
+            }
+            else
+            {
+                <form method="post" action="/checkin" class="ci-form" novalidate>
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="Code" />
+
+                    <div class="ci-field">
+                        <label asp-for="ModuleKey" class="form-label fw-semibold">What did you do?</label>
+                        <select asp-for="ModuleKey" asp-items="Model.ModuleOptions" class="form-select form-select-lg" required>
+                            <option value="">Choose an activity</option>
+                        </select>
+                    </div>
+
+                    <div class="ci-field">
+                        <div class="d-flex justify-content-between align-items-baseline"><label asp-for="MoodBefore" class="form-label fw-semibold mb-1">Mood before</label><output class="ci-out js-out" for="MoodBefore">@Model.MoodBefore</output></div>
+                        <input asp-for="MoodBefore" type="range" min="1" max="10" step="1" class="form-range js-range" aria-describedby="moodScale" />
+                    </div>
+                    <div class="ci-field">
+                        <div class="d-flex justify-content-between align-items-baseline"><label asp-for="MoodAfter" class="form-label fw-semibold mb-1">Mood after</label><output class="ci-out js-out" for="MoodAfter">@Model.MoodAfter</output></div>
+                        <input asp-for="MoodAfter" type="range" min="1" max="10" step="1" class="form-range js-range" aria-describedby="moodScale" />
+                        <div id="moodScale" class="ci-scale"><span>1 very low</span><span>10 very good</span></div>
+                    </div>
+                    <div class="ci-field">
+                        <div class="d-flex justify-content-between align-items-baseline"><label asp-for="StressAfter" class="form-label fw-semibold mb-1">Stress now</label><output class="ci-out js-out" for="StressAfter">@Model.StressAfter</output></div>
+                        <input asp-for="StressAfter" type="range" min="1" max="10" step="1" class="form-range js-range" aria-describedby="stressScale" />
+                        <div id="stressScale" class="ci-scale"><span>1 very calm</span><span>10 very stressed</span></div>
+                    </div>
+
+                    <fieldset class="ci-field">
+                        <legend class="form-label fw-semibold fs-6">How do you feel? <span class="text-muted fw-normal">Pick up to 3</span></legend>
+                        <div class="ci-chips">
+                            @foreach (var e in Reflect.Web.Models.ViewModels.CheckIn.PhoneCheckInViewModel.EmotionChoices)
+                            {
+                                <label class="ci-chip"><input type="checkbox" name="EmotionTags" value="@e" class="js-emotion" @(Model.EmotionTags.Contains(e) ? "checked" : null) /><span>@e</span></label>
+                            }
+                        </div>
+                    </fieldset>
+
+                    <button type="submit" class="btn btn-primary btn-lg w-100"><i class="ri-send-plane-line me-1" aria-hidden="true"></i>Send check-in</button>
+                </form>
+            }
+            <p class="ci-note"><i class="ri-shield-check-line" aria-hidden="true"></i>Demo only. Nothing you enter is linked to you, and it is erased when the demo restarts.</p>
+        </section>
+    </main>
+    <script src="~/js/checkin/checkin.js" asp-append-version="true"></script>
+</body>
+</html>

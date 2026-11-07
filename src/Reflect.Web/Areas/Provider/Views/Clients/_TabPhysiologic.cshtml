@@ -1,0 +1,46 @@
+@model ClientPhysiologicTabViewModel
+
+@if (Model.Series.Count == 0)
+{
+    <div class="card custom-card">
+        <div class="card-body rpd-empty">
+            <i class="ri-heart-pulse-line" aria-hidden="true"></i>
+            <div class="fw-semibold mb-1">No physiologic data for this client</div>
+            <div class="fs-13">Planned extension: when a wearable is paired, readings such as heart rate will appear here. New measures are added as observation codes, without changes to this screen. This phase focuses on RTM.</div>
+        </div>
+    </div>
+}
+else
+{
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div class="rpd-section-title mb-0">Remote physiologic monitoring preview</div>
+        <partial name="_ViewToggle" model='ViewToggleViewModel.Of("physio", ("charts", "Chart", "ri-line-chart-line"), ("table", "Measures", "ri-table-line"))' />
+    </div>
+    <div data-view-panel="physio:charts">
+        <div class="card custom-card">
+            <div class="card-header"><div class="card-title">Heart rate around Reflect sessions, last 30 days</div></div>
+            <div class="card-body"><div class="rpd-chart"><canvas data-chart="heartRate" role="img" aria-label="Line chart of heart rate before and after each Reflect session"></canvas></div></div>
+        </div>
+    </div>
+    <div data-view-panel="physio:table" class="d-none">
+        <div class="card custom-card">
+            <div class="card-header"><div class="card-title">Measures</div></div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered text-nowrap align-middle w-100">
+                        <thead><tr><th>Measure</th><th>Code</th><th>Readings</th><th>Latest</th><th>Avg before session</th><th>Avg after session</th><th>Source</th></tr></thead>
+                        <tbody>
+                            @foreach (var o in Model.Series)
+                            {
+                                <tr><td>@o.Display</td><td>LOINC @o.Code</td><td>@o.Readings</td><td>@o.Latest @o.Unit <span class="text-muted fs-12">(@o.LatestAt)</span></td><td>@o.AveragePre @o.Unit</td><td>@o.AveragePost @o.Unit</td><td>@o.Source</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="rpd-note">Preview of a planned extension. Remote physiologic monitoring (RPM, CPT 99453-99458) is out of scope for this phase, which focuses on RTM; readings here are synthetic and not used for billing.</div>
+}
+
+<script type="application/json" class="js-tab-data">@Html.Raw(Model.ChartDataJson)</script>

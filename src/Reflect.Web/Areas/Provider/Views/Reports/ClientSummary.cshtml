@@ -1,0 +1,116 @@
+@model ClientSummaryViewModel
+@using System.Globalization
+@{
+    ViewData["Title"] = "RTM documentation";
+    ViewData["BreadcrumbParent"] = Model.ClientName;
+    ViewData["BreadcrumbParentUrl"] = Url.Action("Details", "Clients", new { id = Model.ClientId });
+    var s = Model.Summary;
+}
+@section Styles { <partial name="_ProviderStyles" /> }
+
+<div class="rpd-page-header rpd-no-print">
+    <div>
+        <h1 class="page-title mb-1">RTM documentation</h1>
+        <p class="text-muted fs-13 mb-0">@Model.ClientName, @Model.MonthLabel. Print or save as PDF for the chart.</p>
+    </div>
+    <div class="rpd-page-actions">
+        <button type="button" class="btn btn-primary js-print"><i class="ri-printer-line me-1" aria-hidden="true"></i>Print</button>
+        <a class="btn btn-outline-secondary" asp-action="Monthly" asp-route-month="@Model.Month">Back to monthly report</a>
+    </div>
+</div>
+
+<div class="card custom-card rpd-print-area">
+    <div class="card-body rpd-doc">
+        <div class="d-flex flex-wrap justify-content-between gap-2">
+            <div>
+                <h2 class="border-0 mt-0 mb-1 fs-20">Remote Therapeutic Monitoring summary</h2>
+                <div class="text-muted fs-13">@Model.MonthLabel &middot; data through @Model.AsOfLabel &middot; generated @Model.GeneratedAt ET</div>
+            </div>
+            <div class="text-end fs-13"><div class="fw-semibold">@Model.FacilityName</div><div>@Model.ProviderName</div><div>NPI @Model.ProviderNpi</div></div>
+        </div>
+
+        <h2>Client</h2>
+        <dl class="rpd-facts">
+            <div><dt>Name</dt><dd>@Model.ClientName</dd></div>
+            <div><dt>Date of birth</dt><dd>@Model.DateOfBirth</dd></div>
+            <div><dt>MRN</dt><dd>@Model.Mrn</dd></div>
+            <div><dt>Payer</dt><dd>@Model.Payer</dd></div>
+            <div><dt>Diagnosis</dt><dd>@Model.Diagnosis</dd></div>
+            <div><dt>RTM consent</dt><dd>@Model.ConsentDate</dd></div>
+        </dl>
+
+        <h2>Monitoring data (device supply)</h2>
+        @foreach (var p in Model.CompletedPeriods)
+        {
+            <p class="mb-1">Completed period @p.Label: <strong>@TextFormat.Count(p.DataDays, "day")</strong> with data. @p.Description.</p>
+        }
+        <p class="mb-1">@(Model.CompletedPeriods.Count > 0 ? "Current" : "Monitoring") period @Model.DevicePeriod: <strong>@TextFormat.Count(Model.Rtm.DataDaysInPeriod, "day")</strong> with data from Reflect XR or Reflect Mobile so far.</p>
+        <p class="fs-13 text-muted">Days: @(Model.DataDayList.Count == 0 ? "none" : string.Join(", ", Model.DataDayList))</p>
+        <p class="fs-13 mb-0">Engagement, last 30 days: @s.Sessions sessions, @s.TotalMinutes.ToString("0", CultureInfo.InvariantCulture) minutes (@((s.XrShare * 100).ToString("0", CultureInfo.InvariantCulture))% Reflect XR), most used module @Model.TopModule@(s.AverageMoodChange.HasValue ? $", average self-rated mood change per session {(s.AverageMoodChange.Value >= 0 ? "+" : "")}{s.AverageMoodChange.Value.ToString("0.0", CultureInfo.InvariantCulture)}" : string.Empty).</p>
+
+        <h2>Therapeutic response</h2>
+        @if (Model.Assessments.Count == 0)
+        {
+            <p class="fs-13 text-muted">No standardized measures completed this month.</p>
+        }
+        else
+        {
+            <table class="table table-bordered align-middle">
+                <thead><tr><th>Date</th><th>Measure</th><th>Score</th><th>Severity</th><th>Change</th></tr></thead>
+                <tbody>
+                    @foreach (var a in Model.Assessments)
+                    {
+                        <tr><td>@a.Date</td><td>@a.Instrument</td><td>@a.Score / @a.MaxScore</td><td>@a.Severity.Text@(a.SafetyEndorsed ? " (item 9 endorsed)" : "")</td><td>@a.Change</td></tr>
+                    }
+                </tbody>
+            </table>
+        }
+        @if (Model.Flags.Count > 0)
+        {
+            <p class="fs-13 mb-0">Flags: @string.Join("; ", Model.Flags.Select(f => $"{f.Title}: {f.Detail}"))</p>
+        }
+
+        <h2>Treatment management time</h2>
+        @if (Model.TimeEntries.Count == 0)
+        {
+            <p class="fs-13 text-muted">No time logged this month.</p>
+        }
+        else
+        {
+            <table class="table table-bordered align-middle">
+                <thead><tr><th>Date and time (ET)</th><th>Activity</th><th>Mode</th><th>Duration</th><th>Status</th><th>Note</th></tr></thead>
+                <tbody>
+                    @foreach (var e in Model.TimeEntries)
+                    {
+                        <tr><td>@e.When</td><td>@e.Activity</td><td>@e.Mode</td><td>@e.Duration</td><td>@(e.IsAttested ? "Attested" : "Pending (not counted)")</td><td>@e.Note</td></tr>
+                    }
+                </tbody>
+            </table>
+        }
+        <p class="fs-13">Attested total: <strong>@Model.Rtm.ManagementMinutes minutes</strong>. Live interaction this month: <strong>@(Model.Rtm.HasRealTimeInteraction ? "yes" : "no")</strong>.</p>
+
+        <h2>Codes supported by this documentation</h2>
+        @if (Model.Codes.Count == 0)
+        {
+            <p class="fs-13 text-muted">None yet for this month.</p>
+        }
+        else
+        {
+            <ul class="fs-13">
+                @foreach (var c in Model.Codes) { <li><strong>@c.Code</strong> @c.Description@(c.Units > 1 ? $" x{c.Units}" : "")</li> }
+            </ul>
+        }
+        @foreach (var b in Model.Rtm.Blockers) { <p class="fs-13 text-danger mb-1">Not yet billable: @b</p> }
+
+        <div class="rpd-signature">
+            <div>Provider signature</div>
+            <div>Date</div>
+        </div>
+        <p class="rpd-note mt-3 mb-0">Synthetic demo data. Verify codes against payer policy before submitting a claim.</p>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/controllers/provider/clientSummaryController.js" asp-append-version="true"></script>
+    <script nonce="@Context.GetCspNonce()">ClientSummaryController.init();</script>
+}

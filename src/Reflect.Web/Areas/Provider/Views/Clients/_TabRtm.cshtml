@@ -1,0 +1,153 @@
+@model ClientRtmTabViewModel
+
+<div class="row">
+    <div class="col-12 col-xl-7">
+        <div class="card custom-card">
+            <div class="card-header"><div class="card-title">Progress toward billing thresholds</div><partial name="_Badge" model="Model.RtmBadge" /></div>
+            <div class="card-body">
+                <partial name="_RtmMeters" model="Model.Rtm" />
+                @foreach (var b in Model.Rtm.Blockers)
+                {
+                    <div class="rpd-flag rpd-flag-danger mt-3"><i class="ri-error-warning-line rpd-flag-icon text-danger" aria-hidden="true"></i><div class="fs-13">@b</div></div>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-xl-5">
+        <div class="card custom-card">
+            <div class="card-header"><div class="card-title">Codes supported so far</div><span class="text-muted fs-12">Current period and month</span></div>
+            <div class="card-body">
+                @if (Model.Rtm.Codes.Count == 0)
+                {
+                    <div class="text-muted fs-13 mb-2">No codes are supported yet.</div>
+                }
+                else
+                {
+                    <ul class="rpd-list mb-2">
+                        @foreach (var c in Model.Rtm.Codes)
+                        {
+                            <li><span class="rpd-code">@c.Code</span><div class="flex-grow-1 fs-13">@c.Description@if (c.Units > 1) { <span class="text-muted"> (@c.Units units)</span> }</div></li>
+                        }
+                    </ul>
+                }
+                @if (Model.CompletedPeriods.Count > 0)
+                {
+                    <div class="rpd-section-title mt-3">Recently completed 30-day periods</div>
+                    <ul class="rpd-list mb-3">
+                        @foreach (var p in Model.CompletedPeriods)
+                        {
+                            <li>
+                                @if (string.IsNullOrEmpty(p.Code)) { <span class="badge bg-info-transparent text-info"><i class="ri-subtract-line me-1" aria-hidden="true"></i>None</span> }
+                                else { <span class="rpd-code">@p.Code</span> }
+                                <div class="flex-grow-1 fs-13">@p.Label: @TextFormat.Count(p.DataDays, "data day")<div class="text-muted fs-12">@p.Description</div></div>
+                            </li>
+                        }
+                    </ul>
+                }
+                <div class="rpd-note">Device supply: one code per 30-day period (98986 for 2-15 days, 98978 for 16-30). Treatment management: per calendar month, attested time only, with a live interaction. 98978 and 98986 are priced by the local Medicare contractor.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card custom-card">
+    <div class="card-header"><div class="card-title">Data days, @Model.DevicePeriodLabel</div><span class="text-muted fs-12">A day counts when the client used Reflect XR or Reflect Mobile</span></div>
+    <div class="card-body">
+        <div class="rpd-daygrid" role="list" aria-label="Days in this monitoring period">
+            @foreach (var d in Model.DayGrid)
+            {
+                var cls = "rpd-day" + (d.HasData ? " has-data" : "") + (d.IsFuture ? " is-future" : "") + (d.IsToday ? " is-today" : "");
+                var label = d.Label + (d.HasData ? ": data received" : d.IsFuture ? ": upcoming" : ": no data") + (d.IsToday ? " (today)" : "");
+                <div class="@cls" role="listitem" aria-label="@label" title="@label">
+                    <i class="@(d.HasData ? "ri-check-line" : d.IsFuture ? "ri-more-line" : "ri-subtract-line")" aria-hidden="true"></i>@d.Day
+                </div>
+            }
+        </div>
+        <div class="rpd-legend" aria-hidden="true">
+            <span><i class="ri-check-line"></i>Data received</span><span><i class="ri-subtract-line"></i>No data</span><span><i class="ri-more-line"></i>Upcoming</span><span><i class="ri-focus-line"></i>Outlined: today</span>
+        </div>
+    </div>
+</div>
+
+<div class="card custom-card">
+    <div class="card-header">
+        <div class="card-title">Treatment management time, @Model.MonthLabel</div>
+        <div class="d-flex flex-wrap gap-2 align-items-center">
+            <partial name="_ViewToggle" model='ViewToggleViewModel.Of("rtmtime", ("log", "Time log", "ri-table-line"), ("chart", "Month progress", "ri-line-chart-line"))' />
+            @if (Model.Rtm.PendingMinutes > 0)
+            {
+                <form asp-controller="TimeEntries" asp-action="AttestPending" method="post" class="m-0">
+                    <input type="hidden" name="ClientId" value="@Model.ClientId" />
+                    <button type="button" class="btn btn-sm btn-primary js-confirm-submit" data-confirm-style="success" data-confirm-title="@Model.ConfirmAttestTitle" data-confirm-text="@Model.ConfirmAttestText" data-confirm-label="Attest"><i class="ri-shield-check-line me-1" aria-hidden="true"></i>Attest @Model.Rtm.PendingMinutes pending min</button>
+                </form>
+            }
+            <a class="btn btn-sm btn-outline-secondary" asp-controller="TimeEntries" asp-action="Create" asp-route-clientId="@Model.ClientId"><i class="ri-add-line me-1" aria-hidden="true"></i>Add time</a>
+        </div>
+    </div>
+    <div class="card-body">
+        <p class="rpd-note">Time you spend on this page is tracked automatically while you're active, and pauses when you're idle for a minute or switch tabs. It counts toward billing only after you attest it.</p>
+        <div data-view-panel="rtmtime:log">
+            <div class="table-responsive">
+                <table class="table table-bordered text-nowrap align-middle rpd-dt w-100" data-order='[[0,"desc"]]'>
+                    <thead><tr><th>Date and time</th><th>Activity</th><th>Source</th><th>Mode</th><th>Duration</th><th>Status</th><th>Note</th><th>Actions</th></tr></thead>
+                    <tbody>
+                        @foreach (var e in Model.TimeEntries)
+                        {
+                            <tr>
+                                <td data-order="@e.WhenSort">@e.When</td>
+                                <td>@e.Activity</td>
+                                <td><i class="@e.SourceIcon me-1" aria-hidden="true"></i>@e.SourceLabel</td>
+                                <td>@e.Mode</td>
+                                <td data-order="@e.Seconds">@e.Duration</td>
+                                <td>@if (e.IsAttested) { <span class="badge bg-success-transparent text-success"><i class="ri-shield-check-line me-1" aria-hidden="true"></i>Attested</span> } else { <span class="badge bg-warning-transparent text-warning"><i class="ri-time-line me-1" aria-hidden="true"></i>Pending</span> }</td>
+                                <td class="text-wrap" style="min-width: 10rem;">@e.Note</td>
+                                <td>
+                                    @if (!e.IsAttested)
+                                    {
+                                        <form asp-controller="TimeEntries" asp-action="DiscardPending" method="post" class="m-0">
+                                            <input type="hidden" name="ClientId" value="@Model.ClientId" />
+                                            <input type="hidden" name="EntryId" value="@e.Id" />
+                                            <button type="button" class="btn btn-sm btn-outline-secondary js-confirm-submit" data-confirm-style="delete" data-confirm-title="@Model.ConfirmDiscardTitle" data-confirm-text="@Model.ConfirmDiscardText" data-confirm-label="Discard">Discard</button>
+                                        </form>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div data-view-panel="rtmtime:chart" class="d-none">
+            <div class="rpd-chart"><canvas data-chart="cumulativeMinutes" role="img" aria-label="Line chart of cumulative attested minutes this month against the 10, 20 and 40 minute billing thresholds"></canvas></div>
+        </div>
+    </div>
+</div>
+
+@if (Model.AccessHistory != null)
+{
+    <div class="card custom-card">
+        <div class="card-header"><div class="card-title"><i class="ri-file-shield-2-line me-1" aria-hidden="true"></i>Access history</div><span class="text-muted fs-12">Who opened this record, latest 25. Required for an accounting of access.</span></div>
+        <div class="card-body">
+            @if (Model.AccessHistory.Rows.Count == 0)
+            {
+                <div class="text-muted fs-13">No access recorded yet.</div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead><tr><th>When</th><th>User</th><th>Action</th><th>Detail</th></tr></thead>
+                        <tbody>
+                            @foreach (var r in Model.AccessHistory.Rows)
+                            {
+                                <tr><td class="text-nowrap">@r.When</td><td>@r.Actor</td><td><i class="@r.Icon me-1 text-muted" aria-hidden="true"></i>@r.Action</td><td>@r.Detail</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+}
+
+<script type="application/json" class="js-tab-data">@Html.Raw(Model.ChartDataJson)</script>

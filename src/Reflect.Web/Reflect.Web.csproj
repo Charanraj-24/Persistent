@@ -1,0 +1,29 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <RootNamespace>Reflect.Web</RootNamespace>
+    <UserSecretsId>reflect-provider-dashboard-demo</UserSecretsId>
+    <!-- Razor runtime compilation is on in the real app. Pass -p:RazorRuntimeCompilation=false to build offline without NuGet. -->
+    <RazorRuntimeCompilation Condition="'$(RazorRuntimeCompilation)' == ''">true</RazorRuntimeCompilation>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(RazorRuntimeCompilation)' == 'true'">
+    <DefineConstants>$(DefineConstants);RAZOR_RUNTIME_COMPILATION</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(RazorRuntimeCompilation)' == 'true'">
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Reflect.Domain\Reflect.Domain.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Update="menus\**\*.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+</Project>

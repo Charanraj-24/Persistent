@@ -1,0 +1,27 @@
+@model DashboardActivityTabViewModel
+
+<div class="card custom-card">
+    <div class="card-header"><div class="card-title">Recent client activity</div><span class="text-muted fs-12">Latest sessions, last 7 days</span></div>
+    <div class="card-body">
+        @if (Model.Rows.Count == 0)
+        {
+            <div class="rpd-empty">No sessions in the last 7 days.</div>
+        }
+        else
+        {
+            <ul class="rpd-list">
+                @foreach (var r in Model.Rows)
+                {
+                    <li>
+                        <span class="avatar avatar-sm avatar-rounded">@r.Initials</span>
+                        <div class="flex-grow-1 d-flex flex-wrap justify-content-between gap-1">
+                            <span><a class="rpd-name" asp-controller="Clients" asp-action="Details" asp-route-id="@r.ClientId">@r.Name</a>
+                                <span class="text-muted"> used @r.ModuleName for @r.Minutes min</span></span>
+                            <span class="text-muted fs-12"><i class="@r.PlatformIcon me-1" aria-hidden="true"></i>@r.PlatformLabel, @r.When</span>
+                        </div>
+                    </li>
+                }
+            </ul>
+        }
+    </div>
+</div>

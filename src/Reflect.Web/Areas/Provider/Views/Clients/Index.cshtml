@@ -1,0 +1,108 @@
+@inject Microsoft.Extensions.Options.IOptions<Reflect.Web.Services.Assistant.AssistantOptions> AssistantSettings
+@model ClientIndexViewModel
+@{
+    ViewData["Title"] = "Clients";
+}
+@section Styles { <partial name="_ProviderStyles" /> }
+
+<div class="rpd-page-header">
+    <div>
+        <h1 class="page-title mb-1">Clients</h1>
+        <p class="text-muted fs-13 mb-0">Everyone you monitor on Reflect XR and Reflect Mobile, with RTM status for @Model.MonthLabel.</p>
+    </div>
+    <div class="rpd-page-actions">
+        <span id="liveIndicator" class="rpd-live-pill"><span class="rpd-live-dot" aria-hidden="true"></span><span class="js-live-text">Connecting...</span></span>
+        <partial name="_AssistantHint" />
+        <a class="btn btn-outline-secondary" asp-controller="Reports" asp-action="Monthly"><i class="ri-file-chart-line me-1" aria-hidden="true"></i>Monthly RTM report</a>
+    </div>
+</div>
+
+<div id="newDataBanner" class="rpd-flag mb-4 d-none" role="status">
+    <i class="ri-broadcast-line rpd-flag-icon text-info" aria-hidden="true"></i>
+    <div class="flex-grow-1"><div class="rpd-flag-title">New client data arrived</div><div class="fs-13 js-new-data-text"></div></div>
+    <button type="button" class="btn btn-sm btn-primary js-reload-page">Refresh table</button>
+</div>
+
+<div class="card custom-card">
+    <div class="card-header">
+        <div class="card-title">Caseload</div>
+        <span class="text-muted fs-12">Data days: 16 for 98978, 2 for 98986. Minutes: 20 for 98980, 10 for 98979.</span>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered text-nowrap align-middle dt-client w-100" data-page-length="25" data-order='[[1,"asc"],[0,"asc"]]'>
+                <thead>
+                    <tr>
+                        <th>Client</th>
+                        <th>Clinical flag</th>
+                        <th>Last activity</th>
+                        <th>Data days</th>
+                        <th>Minutes</th>
+                        <th>Live contact</th>
+                        <th>RTM status</th>
+                        <th>Next step</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var r in Model.Rows)
+                    {
+                        <tr>
+                            <td data-order="@r.SortName">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="avatar avatar-sm avatar-rounded">@r.Initials</span>
+                                    <div>
+                                        <a class="fw-semibold text-reset" asp-action="Details" asp-route-id="@r.ClientId">@r.Name</a>
+                                        <div class="text-muted fs-12">@r.Mrn &middot; <span title="@r.DiagnosisLabel">@r.DiagnosisCode</span></div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td data-order="@r.FlagSort">
+                                @if (r.TopFlag != null)
+                                {
+                                    <span class="badge bg-@(r.TopFlag.Color)-transparent text-@(r.TopFlag.Color)"><i class="@r.TopFlag.Icon me-1" aria-hidden="true"></i>@r.TopFlag.Title</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted fs-12">None</span>
+                                }
+                            </td>
+                            <td data-order="@r.LastActivitySort">@r.LastActivity</td>
+                            <td data-order="@r.DataDays">
+                                <div class="fw-semibold">@r.DataDays <span class="text-muted fw-normal fs-12">/ 16</span></div>
+                                <div class="progress mt-1" style="height: 0.35rem; width: 5rem;" role="progressbar" aria-label="Data days toward 16" aria-valuenow="@r.DataDays" aria-valuemin="0" aria-valuemax="16"><div class="progress-bar bg-success" style="width: @(r.DataDaysPercent)%"></div></div>
+                            </td>
+                            <td data-order="@r.Minutes">
+                                <div class="fw-semibold">@r.Minutes <span class="text-muted fw-normal fs-12">min</span>@if (r.PendingMinutes > 0) { <span class="text-warning fs-12"> +@r.PendingMinutes pending</span> }</div>
+                                <div class="progress mt-1" style="height: 0.35rem; width: 5rem;" role="progressbar" aria-label="Minutes toward 20" aria-valuenow="@r.Minutes" aria-valuemin="0" aria-valuemax="20"><div class="progress-bar bg-success" style="width: @(r.MinutesPercent)%"></div></div>
+                            </td>
+                            <td data-order="@(r.HasLiveInteraction ? 1 : 0)">
+                                @if (r.HasLiveInteraction)
+                                {
+                                    <span class="text-success"><i class="ri-checkbox-circle-line me-1" aria-hidden="true"></i>Yes</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted"><i class="ri-close-circle-line me-1" aria-hidden="true"></i>Not yet</span>
+                                }
+                            </td>
+                            <td><partial name="_Badge" model="r.Status" /><div class="text-muted fs-12 mt-1">@r.Codes</div></td>
+                            <td class="text-wrap fs-13" style="min-width: 12rem;">@(string.IsNullOrEmpty(r.NextStep) ? "Done for this month." : r.NextStep)</td>
+                            <td><div class="d-flex gap-1"><a class="btn btn-sm btn-primary-light" asp-action="Details" asp-route-id="@r.ClientId">Review<span class="visually-hidden"> @r.Name</span></a><a class="btn btn-sm btn-outline-secondary" asp-action="Prep" asp-route-id="@r.ClientId">Prep<span class="visually-hidden"> for session with @r.Name</span></a></div></td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<partial name="_AssistantPanel" model='Reflect.Web.Models.ViewModels.ProviderDashboard.Assistant.AssistantPanelViewModel.ForCaseload(AssistantSettings.Value.IsConfigured, AssistantSettings.Value.Model)' />
+
+@section Scripts {
+    <script src="~/js/shared/provider/liveFeed.js" asp-append-version="true"></script>
+    <script src="~/js/services/provider/assistantService.js" asp-append-version="true"></script>
+    <script src="~/js/controllers/provider/assistantController.js" asp-append-version="true"></script>
+    <script src="~/js/controllers/provider/clientsIndexController.js" asp-append-version="true"></script>
+    <script nonce="@Context.GetCspNonce()">ClientsIndexController.init({ feedUrl: '@Url.Action("Feed", "Live")' }); AssistantController.init();</script>
+}

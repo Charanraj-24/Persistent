@@ -1,0 +1,44 @@
+@model ClientArtTabViewModel
+
+@if (Model.Tiles.Count == 0)
+{
+    <div class="card custom-card"><div class="card-body rpd-empty">
+        <i class="ri-palette-line" aria-hidden="true"></i>
+        <div class="fw-semibold mb-1">No artwork in the last 60 days</div>
+        <div class="fs-13">Pieces the client creates in Reflect XR or Reflect Mobile appear here when the client chooses to share them.</div>
+    </div></div>
+}
+else
+{
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div>
+            <div class="rpd-section-title mb-1">Artwork timeline, last 60 days</div>
+            <div class="text-muted fs-13">@TextFormat.Count(Model.TotalPieces, "piece") shared. Most used words:
+                @foreach (var w in Model.TopWords) { <span class="rpd-tag">@w.Word</span> }
+            </div>
+        </div>
+    </div>
+    <div class="rpd-art-grid">
+        @foreach (var t in Model.Tiles)
+        {
+            <figure class="rpd-art-tile">
+                <div class="rpd-art-canvas">@Html.Raw(t.Svg)</div>
+                <figcaption>
+                    <div class="d-flex justify-content-between align-items-start gap-2">
+                        <div class="fw-semibold fs-13">@t.Module</div>
+                        <span class="rpd-tag @(t.IsXr ? "is-xr" : null)">@(t.IsXr ? "XR" : "Mobile")</span>
+                    </div>
+                    <div class="text-muted fs-12">@t.Date · @(t.Mood == null ? "No check-in" : "Mood " + t.Mood)
+                        @if (t.MoodLift > 0) { <span class="text-success fw-semibold">(+@t.MoodLift)</span> }
+                        else if (t.MoodLift < 0) { <span class="text-danger fw-semibold">(@t.MoodLift)</span> }
+                    </div>
+                    @if (t.Words.Count > 0)
+                    {
+                        <div class="mt-1">@foreach (var w in t.Words) { <span class="rpd-tag">@w</span> }</div>
+                    }
+                </figcaption>
+            </figure>
+        }
+    </div>
+    <div class="rpd-note mt-3">Demo images are generated placeholders colored by the session's emotion words. In production these are the client's own pieces, shared from Reflect with consent. Artwork is a conversation starter, not a diagnostic measure.</div>
+}

@@ -1,0 +1,40 @@
+@model ClientDetailsViewModel
+<div class="card custom-card">
+    <div class="card-body">
+        <div class="row g-4 align-items-center">
+            <div class="col-12 col-lg-3">
+                <div class="rpd-section-title mb-1">RTM status, @Model.MonthLabel</div>
+                <div class="mb-2"><partial name="_Badge" model="Model.RtmBadge" /></div>
+                <div class="fs-13">@(string.IsNullOrEmpty(Model.NextStep) ? "Done for this month." : Model.NextStep)</div>
+                <a href="#tab-rtm" class="fs-13 js-show-tab" data-tab="#tab-rtm">Open RTM &amp; billing</a>
+            </div>
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="rpd-section-title mb-1">Data days</div>
+                <div class="rpd-kpi-value">@Model.Rtm.DataDaysInPeriod <span class="fs-14 text-muted">/ 16</span></div>
+                <div class="progress mt-2" style="height: 0.45rem;" role="progressbar" aria-label="Data days toward 16" aria-valuenow="@Model.Rtm.DataDaysInPeriod" aria-valuemin="0" aria-valuemax="16"><div class="progress-bar bg-success" style="width: @(Model.DataDaysPercent)%"></div></div>
+                <div class="rpd-note mt-1">Period @Model.DevicePeriodLabel</div>
+            </div>
+            <div class="col-12 col-md-6 col-lg-3">
+                <div class="rpd-section-title mb-1">Provider minutes</div>
+                <div class="rpd-kpi-value">@Model.Rtm.ManagementMinutes <span class="fs-14 text-muted">/ 20 min</span></div>
+                <div class="progress mt-2" style="height: 0.45rem;" role="progressbar" aria-label="Minutes toward 20" aria-valuenow="@Model.Rtm.ManagementMinutes" aria-valuemin="0" aria-valuemax="20"><div class="progress-bar bg-success" style="width: @(Model.MinutesPercent)%"></div></div>
+                <div class="rpd-note mt-1">@(Model.Rtm.PendingMinutes > 0 ? $"{Model.Rtm.PendingMinutes} min pending attestation" : "All time attested")</div>
+            </div>
+            <div class="col-12 col-lg-3">
+                <div class="rpd-section-title mb-1">Supported codes</div>
+                @if (Model.Rtm.Codes.Count == 0)
+                {
+                    <div class="text-muted fs-13">None yet</div>
+                }
+                @foreach (var c in Model.Rtm.Codes)
+                {
+                    <span class="rpd-code" title="@c.Description">@c.Code@if (c.Units > 1) { <small>x@(c.Units)</small> }</span>
+                }
+                @if (Model.Rtm.Codes.Count > 0)
+                {
+                    <div class="rpd-note mt-1" title="@RtmFeeSchedule.Source">About <strong>@Model.Estimate.Formatted</strong> at Medicare national average@(Model.Estimate.UnpricedUnits > 0 ? ", plus the locally priced device code" : string.Empty)</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>

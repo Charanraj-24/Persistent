@@ -1,0 +1,103 @@
+@model ClientDetailsViewModel
+@using Reflect.Domain.Entities.ProviderDashboard
+@using Reflect.Web.Messages
+@inject Microsoft.Extensions.Options.IOptions<Reflect.Web.Services.Assistant.AssistantOptions> AssistantSettings
+@{
+    ViewData["Title"] = Model.Name;
+    ViewData["BreadcrumbParent"] = "Clients";
+    ViewData["BreadcrumbParentUrl"] = Url.Action("Index", "Clients");
+}
+@section Styles { <partial name="_ProviderStyles" /> }
+
+<section class="rpd-hero" aria-labelledby="clientTitle">
+<div class="rpd-page-header">
+    <div class="rpd-client-head">
+        <span class="avatar avatar-lg avatar-rounded">@Model.Initials</span>
+        <div>
+            <h1 class="page-title" id="clientTitle">@Model.Name</h1>
+            <div class="rpd-hero-meta"><span><i class="ri-user-line" aria-hidden="true"></i>@Model.Age years</span><span><i class="ri-hashtag" aria-hidden="true"></i>@Model.Mrn</span><span><i class="ri-stethoscope-line" aria-hidden="true"></i>@Model.DiagnosisCode @Model.DiagnosisLabel</span></div>
+        </div>
+    </div>
+    <div class="rpd-page-actions">
+        <span id="liveIndicator" class="rpd-live-pill"><span class="rpd-live-dot" aria-hidden="true"></span><span class="js-live-text">Connecting...</span></span>
+        @if (!Model.IsPaused)
+        {
+            <div id="reviewTimer" class="rpd-timer is-paused" aria-label="Review time tracker">
+                <span class="rpd-timer-dot" aria-hidden="true"></span>
+                <span class="rpd-timer-status" aria-live="polite">@ProviderDashboardMessages.TrackerPaused</span>
+                <span class="rpd-timer-clock" aria-label="Time tracked this visit">0:00</span>
+                <button type="button" class="btn btn-outline-secondary js-timer-toggle" aria-pressed="false">Pause</button>
+            </div>
+        }
+        <a class="btn btn-primary" asp-action="Prep" asp-route-id="@Model.ClientId"><i class="ri-clipboard-line me-1" aria-hidden="true"></i>Prep for session</a>
+        <a class="btn btn-outline-secondary" asp-controller="TimeEntries" asp-action="Create" asp-route-clientId="@Model.ClientId" asp-route-activity="@((int)RtmActivityType.InteractiveCommunication)"><i class="ri-video-chat-line me-1" aria-hidden="true"></i>Log live interaction</a>
+        <partial name="_AssistantHint" />
+        <a class="btn btn-outline-secondary" asp-controller="Reports" asp-action="ClientSummary" asp-route-id="@Model.ClientId"><i class="ri-printer-line me-1" aria-hidden="true"></i>RTM documentation</a>
+    </div>
+</div>
+</section>
+
+@if (Model.IsPaused)
+{
+    <div class="rpd-flag mb-4"><i class="ri-pause-circle-line rpd-flag-icon text-info" aria-hidden="true"></i><div><div class="rpd-flag-title">Monitoring paused</div><div class="fs-13">Review time isn't tracked while monitoring is paused.</div></div></div>
+}
+
+<div id="clientStatusStrip" data-refresh-url="@Url.Action("Status", "Clients", new { id = Model.ClientId })">
+    <partial name="_StatusStrip" model="Model" />
+</div>
+
+<ul class="nav nav-tabs" id="clientTabs" role="tablist">
+    @for (var i = 0; i < ClientDetailsViewModel.Tabs.Count; i++)
+    {
+        var t = ClientDetailsViewModel.Tabs[i];
+        <li class="nav-item" role="presentation">
+            <button class="nav-link @(i == 0 ? "active" : null)" id="tab-@(t.Key)-btn" data-bs-toggle="tab" data-bs-target="#tab-@t.Key" type="button" role="tab" aria-controls="tab-@t.Key" aria-selected="@(i == 0 ? "true" : "false")"><i class="@t.Icon me-1" aria-hidden="true"></i>@t.Label</button>
+        </li>
+    }
+</ul>
+
+<div class="tab-content rpd-tab-content" id="clientTabsContent">
+    @for (var i = 0; i < ClientDetailsViewModel.Tabs.Count; i++)
+    {
+        var t = ClientDetailsViewModel.Tabs[i];
+        <div class="tab-pane fade @(i == 0 ? "show active" : null)" id="tab-@t.Key" role="tabpanel" aria-labelledby="tab-@(t.Key)-btn" tabindex="0"
+             data-tab-url="@Url.Action("Tab", "Clients", new { id = Model.ClientId, name = t.Key })" data-tab-label="@t.Label">
+            <partial name="_TabLoading" model="@t.Label" />
+        </div>
+    }
+</div>
+
+<partial name="_AssistantPanel" model='Reflect.Web.Models.ViewModels.ProviderDashboard.Assistant.AssistantPanelViewModel.ForClient(Model.ClientId, Model.Name, AssistantSettings.Value.IsConfigured, AssistantSettings.Value.Model)' />
+
+<form id="antiForgeryForm" class="d-none" method="post">@Html.AntiForgeryToken()</form>
+
+@section Scripts {
+    <script src="~/assets/libs/chartjs/chart.umd.js"></script>
+    <script src="~/js/shared/provider/providerCharts.js" asp-append-version="true"></script>
+    <script src="~/js/shared/provider/providerTabs.js" asp-append-version="true"></script>
+    <script src="~/js/shared/provider/liveFeed.js" asp-append-version="true"></script>
+    <script src="~/js/services/provider/reviewTimeService.js" asp-append-version="true"></script>
+    <script src="~/js/shared/provider/reviewTimer.js" asp-append-version="true"></script>
+    <script src="~/js/services/provider/clientDetailsService.js" asp-append-version="true"></script>
+    <script src="~/js/controllers/provider/clientDetailsController.js" asp-append-version="true"></script>
+    <script src="~/js/services/provider/assistantService.js" asp-append-version="true"></script>
+    <script src="~/js/controllers/provider/assistantController.js" asp-append-version="true"></script>
+    <script nonce="@Context.GetCspNonce()">
+        ClientDetailsController.init({
+            tabsId: 'clientTabs',
+            clientId: '@Model.ClientId',
+            trackingKey: '@Model.TrackingKey',
+            heartbeatUrl: '@Url.Action("Heartbeat", "TimeEntries")',
+            feedUrl: '@Url.Action("Feed", "Live")',
+            intervalSeconds: @ReviewTimeRules.HeartbeatIntervalSeconds,
+            token: document.querySelector('#antiForgeryForm input[name="__RequestVerificationToken"]').value,
+            labels: {
+                active: '@ProviderDashboardMessages.TrackerActive',
+                paused: '@ProviderDashboardMessages.TrackerPaused',
+                idle: '@ProviderDashboardMessages.TrackerIdle',
+                loadFailed: '@ProviderDashboardMessages.TabLoadFailed'
+            }
+        });
+        AssistantController.init();
+    </script>
+}

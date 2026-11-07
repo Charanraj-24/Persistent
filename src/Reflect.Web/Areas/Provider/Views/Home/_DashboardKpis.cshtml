@@ -1,0 +1,28 @@
+@model ProviderDashboardViewModel
+<div class="rpd-statstrip" role="group" aria-label="This month at a glance">
+    <div class="rpd-stat">
+        <div class="rpd-stat-label"><i class="ri-team-line" aria-hidden="true"></i>Clients on RTM</div>
+        <div class="rpd-stat-value">@Model.ActiveClients</div>
+        <div class="rpd-stat-note">Active this month</div>
+    </div>
+    <div class="rpd-stat">
+        <div class="rpd-stat-label"><i class="ri-checkbox-circle-line" aria-hidden="true"></i>Billable now</div>
+        <div class="rpd-stat-value">@Model.BillableClients<small>of @Model.ActiveClients</small></div>
+        <div class="rpd-stat-note">@TextFormat.Count(Model.OpenTodos, "open RTM to-do")</div>
+    </div>
+    <div class="rpd-stat">
+        <div class="rpd-stat-label"><i class="ri-timer-line" aria-hidden="true"></i>Your attested time</div>
+        <div class="rpd-stat-value">@Model.AttestedMinutes<small>min</small></div>
+        <div class="rpd-stat-note">@(Model.PendingMinutes > 0 ? $"{Model.PendingMinutes} min waiting for attestation" : "Nothing waiting for attestation")</div>
+    </div>
+    <div class="rpd-stat is-money">
+        <div class="rpd-stat-label"><i class="ri-money-dollar-circle-line" aria-hidden="true"></i>Supports in billing</div>
+        <div class="rpd-stat-value">@Model.Estimate.Rounded</div>
+        <div class="rpd-stat-note" title="@RtmFeeSchedule.Source">Medicare national average@(Model.Estimate.UnpricedUnits > 0 ? $", plus {Model.Estimate.UnpricedUnits} locally priced device codes" : string.Empty)</div>
+    </div>
+    <div class="rpd-stat @(Model.UrgentFlags > 0 ? "is-alert" : null)">
+        <div class="rpd-stat-label"><i class="ri-alarm-warning-line" aria-hidden="true"></i>Need clinical review</div>
+        <div class="rpd-stat-value">@Model.ClientsNeedingAttention</div>
+        <div class="rpd-stat-note">@(Model.UrgentFlags > 0 ? $"{Model.UrgentFlags} urgent" : "None urgent")</div>
+    </div>
+</div>

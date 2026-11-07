@@ -1,0 +1,161 @@
+@inject Microsoft.Extensions.Options.IOptions<Reflect.Web.Services.Assistant.AssistantOptions> AssistantSettings
+@model ClientPrepViewModel
+@using Reflect.Domain.Entities.ProviderDashboard
+@using Reflect.Web.Messages
+@{
+    ViewData["Title"] = "Session prep";
+    ViewData["BreadcrumbParent"] = Model.Name;
+    ViewData["BreadcrumbParentUrl"] = Url.Action("Details", "Clients", new { id = Model.ClientId });
+}
+@section Styles { <partial name="_ProviderStyles" /> }
+
+<section class="rpd-hero rpd-hero-compact" aria-labelledby="prepTitle">
+    <div class="rpd-page-header">
+        <div class="rpd-client-head">
+            <span class="avatar avatar-lg avatar-rounded">@Model.Initials</span>
+            <div>
+                <h1 class="page-title" id="prepTitle">Before your session with @Model.FirstName</h1>
+                <div class="rpd-hero-meta"><span><i class="ri-stethoscope-line" aria-hidden="true"></i>@Model.DiagnosisLabel</span><span><i class="ri-time-line" aria-hidden="true"></i>Last used Reflect @Model.LastSession</span></div>
+            </div>
+        </div>
+        <div class="rpd-page-actions rpd-no-print">
+            @if (!Model.IsPaused)
+            {
+                <div id="reviewTimer" class="rpd-timer is-paused" aria-label="Review time tracker">
+                    <span class="rpd-timer-dot" aria-hidden="true"></span>
+                    <span class="rpd-timer-status" aria-live="polite">@ProviderDashboardMessages.TrackerPaused</span>
+                    <span class="rpd-timer-clock" aria-label="Time tracked this visit">0:00</span>
+                    <button type="button" class="btn btn-outline-secondary js-timer-toggle" aria-pressed="false">Pause</button>
+                </div>
+            }
+            <partial name="_AssistantHint" />
+            <button type="button" class="btn btn-outline-secondary js-print"><i class="ri-printer-line me-1" aria-hidden="true"></i>Print</button>
+            <a class="btn btn-outline-secondary" asp-action="Details" asp-route-id="@Model.ClientId"><i class="ri-user-line me-1" aria-hidden="true"></i>Full profile</a>
+        </div>
+    </div>
+</section>
+
+<div class="rpd-print-area">
+<div class="row">
+    <div class="col-12 col-xl-7">
+        <div class="card custom-card rpd-prep-points">
+            <div class="card-header"><div class="card-title"><i class="ri-chat-quote-line me-1" aria-hidden="true"></i>Worth bringing up</div></div>
+            <div class="card-body">
+                @if (Model.TalkingPoints.Count == 0)
+                {
+                    <div class="rpd-empty">Not enough recent data yet.</div>
+                }
+                else
+                {
+                    <ol class="rpd-talking-points">@foreach (var tp in Model.TalkingPoints) { <li>@tp</li> }</ol>
+                }
+                <div class="rpd-note mt-2">Treatment goals: @Model.Goals</div>
+            </div>
+        </div>
+
+        <div class="card custom-card">
+            <div class="card-header"><div class="card-title">This week in Reflect</div><span class="text-muted fs-12">@TextFormat.Count(Model.SessionsThisWeek, "session"), @Model.MinutesThisWeek min</span></div>
+            <div class="card-body">
+                @if (Model.ThisWeek.Count == 0)
+                {
+                    <div class="rpd-empty">No Reflect sessions in the last 7 days. Ask what got in the way.</div>
+                }
+                else
+                {
+                    <ul class="rpd-list">
+                        @foreach (var r in Model.ThisWeek)
+                        {
+                            <li>
+                                <i class="@r.PlatformIcon fs-18 text-info" aria-hidden="true"></i>
+                                <div class="flex-grow-1 min-w-0">
+                                    <div class="d-flex flex-wrap justify-content-between gap-1"><span class="fw-semibold">@r.ModuleName</span><span class="text-muted fs-12">@r.When</span></div>
+                                    <div class="fs-13 text-muted">@r.Minutes min, @(r.MoodChangeSort == -99 ? "no mood check-in" : $"mood {r.MoodChange}")@(string.IsNullOrEmpty(r.Emotions) ? "" : $", felt {r.Emotions}")</div>
+                                </div>
+                            </li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-xl-5">
+        @if (Model.Flags.Count > 0)
+        {
+            <div class="card custom-card">
+                <div class="card-header"><div class="card-title"><i class="ri-flag-line me-1" aria-hidden="true"></i>Clinical flags</div></div>
+                <div class="card-body">
+                    @foreach (var f in Model.Flags)
+                    {
+                        <div class="rpd-flag rpd-flag-@f.Color">
+                            <i class="@f.Icon rpd-flag-icon text-@f.Color" aria-hidden="true"></i>
+                            <div><div class="rpd-flag-title">@f.SeverityLabel: @f.Title</div><div class="fs-13">@f.Detail</div></div>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+
+        <div class="card custom-card">
+            <div class="card-header"><div class="card-title">Latest scores</div></div>
+            <div class="card-body">
+                @if (Model.LatestScores.Count == 0) { <div class="text-muted fs-13">No assessments yet.</div> }
+                <div class="rpd-scores">
+                    @foreach (var a in Model.LatestScores)
+                    {
+                        <div class="rpd-score">
+                            <div class="rpd-stat-label">@a.Instrument, @a.Date</div>
+                            <div class="rpd-stat-value">@a.Score<small>/ @a.MaxScore</small></div>
+                            <div class="d-flex flex-wrap gap-2 align-items-center mt-1"><partial name="_Badge" model="a.Severity" /><span class="fs-12 text-muted">@(a.Change == "Baseline" ? "Baseline" : $"{a.Change} since baseline")</span></div>
+                            @if (a.SafetyEndorsed) { <div class="fs-12 mt-1 text-danger"><i class="ri-alarm-warning-line me-1" aria-hidden="true"></i>Item 9 endorsed</div> }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="card custom-card">
+            <div class="card-header"><div class="card-title">Mood before and after, last 3 weeks</div></div>
+            <div class="card-body"><div class="rpd-chart rpd-chart-sm"><canvas id="prepMoodChart" role="img" aria-label="Line chart of mood before and after each Reflect session in the last three weeks"></canvas></div></div>
+        </div>
+
+        <div class="card custom-card rpd-no-print">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center gap-2 mb-2"><span class="fw-semibold">RTM this month</span><partial name="_Badge" model="Model.RtmBadge" /></div>
+                <div class="fs-13 mb-3">@(string.IsNullOrEmpty(Model.RtmNextStep) ? "Done for this month." : Model.RtmNextStep)</div>
+                @if (!Model.HasLiveInteractionThisMonth)
+                {
+                    <div class="rpd-note mb-2">This session can count as the month's live interaction. Log it afterward.</div>
+                }
+                <a class="btn btn-primary btn-sm" asp-controller="TimeEntries" asp-action="Create" asp-route-clientId="@Model.ClientId" asp-route-activity="@((int)RtmActivityType.InteractiveCommunication)"><i class="ri-video-chat-line me-1" aria-hidden="true"></i>Log this session</a>
+            </div>
+        </div>
+    </div>
+</div>
+</div>
+
+<script type="application/json" id="prepChartData">@Html.Raw(Model.ChartDataJson)</script>
+<partial name="_AssistantPanel" model='Reflect.Web.Models.ViewModels.ProviderDashboard.Assistant.AssistantPanelViewModel.ForClient(Model.ClientId, Model.Name, AssistantSettings.Value.IsConfigured, AssistantSettings.Value.Model)' />
+<form id="antiForgeryForm" class="d-none" method="post">@Html.AntiForgeryToken()</form>
+
+@section Scripts {
+    <script src="~/assets/libs/chartjs/chart.umd.js"></script>
+    <script src="~/js/shared/provider/providerCharts.js" asp-append-version="true"></script>
+    <script src="~/js/services/provider/reviewTimeService.js" asp-append-version="true"></script>
+    <script src="~/js/shared/provider/reviewTimer.js" asp-append-version="true"></script>
+    <script src="~/js/controllers/provider/clientPrepController.js" asp-append-version="true"></script>
+    <script src="~/js/services/provider/assistantService.js" asp-append-version="true"></script>
+    <script src="~/js/controllers/provider/assistantController.js" asp-append-version="true"></script>
+    <script nonce="@Context.GetCspNonce()">
+        ClientPrepController.init({
+            chartDataId: 'prepChartData',
+            clientId: '@Model.ClientId',
+            trackingKey: '@Model.TrackingKey',
+            heartbeatUrl: '@Url.Action("Heartbeat", "TimeEntries")',
+            intervalSeconds: @ReviewTimeRules.HeartbeatIntervalSeconds,
+            token: document.querySelector('#antiForgeryForm input[name="__RequestVerificationToken"]').value,
+            labels: { active: '@ProviderDashboardMessages.TrackerActive', paused: '@ProviderDashboardMessages.TrackerPaused', idle: '@ProviderDashboardMessages.TrackerIdle' }
+        });
+        AssistantController.init();
+    </script>
+}

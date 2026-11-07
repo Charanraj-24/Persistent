@@ -1,0 +1,55 @@
+@model Reflect.Web.Models.ViewModels.ProviderDashboard.Audit.AccessLogViewModel
+@{
+    ViewData["Title"] = "Access audit log";
+}
+@section Styles { <partial name="_ProviderStyles" /> }
+
+<div class="rpd-page-header">
+    <div>
+        <h1 class="page-title mb-1">Access audit log</h1>
+        <p class="text-muted fs-13 mb-0">Who opened client records and when, last @Reflect.Web.Models.ViewModels.ProviderDashboard.Audit.AccessLogViewModel.Days days. Times are US Eastern.</p>
+    </div>
+</div>
+
+<div class="rpd-flag mb-4"><i class="ri-file-shield-2-line rpd-flag-icon text-info" aria-hidden="true"></i>
+    <div><div class="rpd-flag-title">Actions only, no patient data</div>
+        <div class="fs-13">Clients appear as record references, so you can spot unusual access without seeing who the client is. The treating provider sees the same history on the client's RTM tab. Entries are append-only.</div></div>
+</div>
+
+<div class="rpd-statstrip mb-4" role="group" aria-label="Audit summary">
+    <div class="rpd-stat"><div class="rpd-stat-label"><i class="ri-list-check-3" aria-hidden="true"></i>Events</div><div class="rpd-stat-value">@Model.TotalEvents</div><div class="rpd-stat-note">Last @Reflect.Web.Models.ViewModels.ProviderDashboard.Audit.AccessLogViewModel.Days days</div></div>
+    <div class="rpd-stat"><div class="rpd-stat-label"><i class="ri-folder-user-line" aria-hidden="true"></i>Records opened</div><div class="rpd-stat-value">@Model.RecordsOpened</div><div class="rpd-stat-note">Distinct client records</div></div>
+    <div class="rpd-stat"><div class="rpd-stat-label"><i class="ri-team-line" aria-hidden="true"></i>Active users</div><div class="rpd-stat-value">@Model.ActiveUsers</div><div class="rpd-stat-note">Signed-in staff</div></div>
+    <div class="rpd-stat"><div class="rpd-stat-label"><i class="ri-download-2-line" aria-hidden="true"></i>Exports and printouts</div><div class="rpd-stat-value">@Model.Exports</div><div class="rpd-stat-note">CSV and RTM documentation</div></div>
+    <div class="rpd-stat @(Model.FailedSignIns > 0 ? "is-alert" : null)"><div class="rpd-stat-label"><i class="ri-error-warning-line" aria-hidden="true"></i>Failed sign-ins</div><div class="rpd-stat-value">@Model.FailedSignIns</div><div class="rpd-stat-note">Five in a row locks the account</div></div>
+</div>
+
+<div class="card custom-card" id="auditCard">
+    <div class="card-header"><div class="card-title">Events</div></div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered text-nowrap align-middle rpd-dt w-100" data-order='[[0,"desc"]]' data-page-length="25">
+                <thead><tr><th>When</th><th>User</th><th>Role</th><th>Action</th><th>Record</th><th>Detail</th><th>Result</th></tr></thead>
+                <tbody>
+                    @foreach (var r in Model.Rows)
+                    {
+                        <tr>
+                            <td data-order="@r.WhenSort">@r.When</td>
+                            <td>@r.Actor</td>
+                            <td>@r.Role</td>
+                            <td><i class="@r.Icon me-1 text-muted" aria-hidden="true"></i>@r.Action</td>
+                            <td><code>@r.Record</code></td>
+                            <td>@r.Detail</td>
+                            <td>@if (r.Succeeded) { <partial name="_Badge" model='new BadgeViewModel("success", "OK", "ri-check-line")' /> } else { <partial name="_Badge" model='new BadgeViewModel("danger", "Denied", "ri-close-line")' /> }</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/shared/provider/providerTabs.js" asp-append-version="true"></script>
+    <script src="~/js/controllers/provider/accessLogController.js" asp-append-version="true"></script>
+}

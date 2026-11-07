@@ -1,0 +1,126 @@
+@model FacilityBillingViewModel
+@{
+    ViewData["Title"] = "RTM billing by provider";
+}
+@section Styles { <partial name="_ProviderStyles" /> }
+
+<div class="rpd-page-header">
+    <div>
+        <h1 class="page-title mb-1">RTM billing by provider</h1>
+        <p class="text-muted fs-13 mb-0">@Model.FacilityName. @(Model.IsCurrentMonth ? $"{Model.MonthLabel}, month to date as of {Model.AsOfLabel}." : $"Final for {Model.MonthLabel}.")</p>
+    </div>
+    <div class="rpd-page-actions">
+        <form method="get" asp-action="Index" class="d-flex flex-wrap gap-2 m-0">
+            @if (Model.FacilityOptions.Count > 1)
+            {
+                <label for="facilityId" class="visually-hidden">Facility</label>
+                <select id="facilityId" name="facilityId" class="form-select js-auto-submit-select" asp-items="Model.FacilityOptions"></select>
+            }
+            else
+            {
+                <input type="hidden" name="facilityId" value="@Model.FacilityId" />
+            }
+            <label for="month" class="visually-hidden">Month</label>
+            <select id="month" name="month" class="form-select js-auto-submit-select" asp-items="Model.MonthOptions"></select>
+        </form>
+        <a class="btn btn-primary" asp-action="ExportCsv" asp-route-month="@Model.Month" asp-route-facilityId="@Model.FacilityId"><i class="ri-download-2-line me-1" aria-hidden="true"></i>Export CSV</a>
+    </div>
+</div>
+
+<div class="rpd-flag mb-4"><i class="ri-shield-user-line rpd-flag-icon text-info" aria-hidden="true"></i>
+    <div><div class="rpd-flag-title">Billing totals only</div>
+        <div class="fs-13">This view shows counts per provider. Client names and clinical data stay with each client's treating provider, following HIPAA's minimum-necessary standard.</div></div>
+</div>
+
+<div class="row rpd-kpi-row">
+    <div class="col-12 col-sm-6 col-xl-3"><div class="card custom-card"><div class="card-body rpd-kpi">
+        <span class="rpd-kpi-icon bg-success-transparent"><i class="ri-stethoscope-line" aria-hidden="true"></i></span>
+        <div><div class="rpd-kpi-value">@Model.TotalProviders</div><div class="rpd-kpi-label">Providers</div><div class="rpd-kpi-sub">@Model.TotalClients clients on RTM</div></div>
+    </div></div></div>
+    <div class="col-12 col-sm-6 col-xl-3"><div class="card custom-card"><div class="card-body rpd-kpi">
+        <span class="rpd-kpi-icon bg-success-transparent"><i class="ri-checkbox-circle-line" aria-hidden="true"></i></span>
+        <div><div class="rpd-kpi-value">@Model.TotalClientsWithCodes <span class="fs-14 text-muted">of @Model.TotalClients</span></div><div class="rpd-kpi-label">Clients with codes ready</div></div>
+    </div></div></div>
+    <div class="col-12 col-sm-6 col-xl-3"><div class="card custom-card"><div class="card-body rpd-kpi">
+        <span class="rpd-kpi-icon bg-info-transparent"><i class="ri-timer-line" aria-hidden="true"></i></span>
+        <div><div class="rpd-kpi-value">@Model.Estimate.Rounded</div><div class="rpd-kpi-label">Estimated billing, @Model.TotalMinutes attested minutes</div><div class="rpd-kpi-sub" title="@RtmFeeSchedule.Source">Medicare national average; CBT device codes priced locally</div></div>
+    </div></div></div>
+    <div class="col-12 col-sm-6 col-xl-3"><div class="card custom-card"><div class="card-body rpd-kpi">
+        <span class="rpd-kpi-icon bg-warning-transparent"><i class="ri-error-warning-line" aria-hidden="true"></i></span>
+        <div><div class="rpd-kpi-value">@Model.TotalGaps</div><div class="rpd-kpi-label">Documentation gaps</div><div class="rpd-kpi-sub">Missing live contact, consent or attestation</div></div>
+    </div></div></div>
+</div>
+
+<ul class="nav nav-tabs" id="billingTabs" role="tablist">
+    <li class="nav-item" role="presentation"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#btab-providers" type="button" role="tab" aria-controls="btab-providers" aria-selected="true"><i class="ri-table-line me-1" aria-hidden="true"></i>Providers</button></li>
+    <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#btab-charts" type="button" role="tab" aria-controls="btab-charts" aria-selected="false"><i class="ri-bar-chart-2-line me-1" aria-hidden="true"></i>Charts</button></li>
+</ul>
+<div class="tab-content rpd-tab-content" id="billingTabsContent">
+    <div class="tab-pane fade show active" id="btab-providers" role="tabpanel" tabindex="0">
+        <div class="card custom-card">
+            <div class="card-header"><div class="card-title">Providers, @Model.MonthLabel</div>
+                <div>@foreach (var kv in Model.CodeTotals) { <span class="rpd-code" title="@RtmBillingRules.Describe(kv.Key)">@kv.Key <small>x@(kv.Value)</small></span> }</div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered text-nowrap align-middle dt-client w-100">
+                        <thead><tr><th>Provider</th><th>Clients on RTM</th><th>Codes ready</th><th>Est. $</th><th>Attested minutes</th><th>Live contact</th><th>Gaps</th><th>Codes (units)</th></tr></thead>
+                        <tbody>
+                            @foreach (var r in Model.Rows)
+                            {
+                                <tr>
+                                    <td data-order="@r.Name"><div class="d-flex align-items-center gap-2"><span class="avatar avatar-sm avatar-rounded">@r.Initials</span>
+                                        <div><div class="fw-semibold">@r.Name</div><div class="text-muted fs-12">@r.Credentials &middot; NPI @r.Npi</div></div></div></td>
+                                    <td>@r.ClientsOnRtm</td>
+                                    <td data-order="@r.ClientsWithCodes">@r.ClientsWithCodes <span class="text-muted fs-12">of @r.ClientsOnRtm</span></td>
+                                    <td data-order="@r.Estimate.Amount">@r.Estimate.Formatted</td>
+                                    <td data-order="@r.AttestedMinutes">@r.AttestedMinutes@if (r.PendingMinutes > 0) { <span class="text-warning fs-12"> (+@r.PendingMinutes pending)</span> }</td>
+                                    <td data-order="@r.ClientsWithLiveInteraction">@r.ClientsWithLiveInteraction <span class="text-muted fs-12">of @r.ClientsOnRtm</span></td>
+                                    <td data-order="@r.DocumentationGaps">
+                                        <partial name="_Badge" model="r.Status" />
+                                        @if (r.DocumentationGaps > 0)
+                                        {
+                                            <div class="text-muted fs-12 mt-1 text-wrap" style="min-width: 12rem;">
+                                                @if (r.ClientsMissingLiveInteraction > 0) { <div>@TextFormat.Count(r.ClientsMissingLiveInteraction, "client") @(r.ClientsMissingLiveInteraction == 1 ? "needs" : "need") a live interaction</div> }
+                                                @if (r.ClientsMissingConsent > 0) { <div>@TextFormat.Count(r.ClientsMissingConsent, "client") missing RTM consent</div> }
+                                                @if (r.ClientsWithPendingTime > 0) { <div>@TextFormat.Count(r.ClientsWithPendingTime, "client") with time to attest</div> }
+                                            </div>
+                                        }
+                                    </td>
+                                    <td class="text-wrap" style="min-width: 10rem;">@r.Codes</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="rpd-note mt-3">Device-supply codes count once their 30-day period has ended; treatment-management codes per calendar month. Providers resolve gaps from their own dashboards.</div>
+            </div>
+        </div>
+    </div>
+    <div class="tab-pane fade" id="btab-charts" role="tabpanel" tabindex="0">
+        <div class="row">
+            <div class="col-12 col-xl-6">
+                <div class="card custom-card">
+                    <div class="card-header"><div class="card-title">Attested minutes by provider</div></div>
+                    <div class="card-body"><div class="rpd-chart"><canvas data-chart="minutes" role="img" aria-label="Bar chart of attested and pending minutes for each provider"></canvas></div></div>
+                </div>
+            </div>
+            <div class="col-12 col-xl-6">
+                <div class="card custom-card">
+                    <div class="card-header"><div class="card-title">Code units by provider</div></div>
+                    <div class="card-body"><div class="rpd-chart"><canvas data-chart="codes" role="img" aria-label="Stacked bar chart of RTM code units for each provider"></canvas></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="application/json" id="billingChartData">@Html.Raw(Model.ChartDataJson)</script>
+
+@section Scripts {
+    <script src="~/assets/libs/chartjs/chart.umd.js"></script>
+    <script src="~/js/shared/provider/providerCharts.js" asp-append-version="true"></script>
+    <script src="~/js/shared/provider/providerTabs.js" asp-append-version="true"></script>
+    <script src="~/js/controllers/provider/facilityBillingController.js" asp-append-version="true"></script>
+    <script nonce="@Context.GetCspNonce()">FacilityBillingController.init({ tabsId: 'billingTabs', chartDataId: 'billingChartData' });</script>
+}

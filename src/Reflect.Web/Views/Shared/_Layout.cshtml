@@ -1,0 +1,193 @@
+@* STAND-IN LAYOUT: lookalike of the Reflect XR shell so the demo runs on its own. Dropped on merge;
+   screens must not depend on anything here (they use @section Styles / @section Scripts). *@
+@using Reflect.Web.Standins.Layout
+@using Reflect.Web.Standins.Security
+@inject StandinMenuProvider Menu
+@inject Reflect.Domain.Interfaces.ICurrentUserService CurrentUser
+@{
+    var path = Context.Request.Path.Value ?? string.Empty;
+    var demoUser = DemoUsers.All.FirstOrDefault(u => u.UserId == CurrentUser.UserId) ?? DemoUsers.ProviderEllison;
+    var isProvider = CurrentUser.IsInRole(DemoUsers.ProviderRole);
+    var isFacilityAdmin = CurrentUser.IsInRole(DemoUsers.FacilityAdminRole);
+    var menuItems = isProvider ? Menu.Items : isFacilityAdmin ? Menu.FacilityAdminItems : Array.Empty<StandinMenuItem>();
+    var initials = string.Concat(demoUser.DisplayName.Replace("Dr. ", string.Empty).Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(s => s[0]));
+    var nonce = Context.GetCspNonce();
+}
+<!DOCTYPE html>
+<html lang="en" data-theme-mode="light">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>@ViewData["Title"] - Reflect XR</title>
+    <script nonce="@nonce">
+        (function () { try { var d = document.documentElement, ls = window.localStorage;
+            var t = ls.getItem('reflect-theme'); if (t === 'dark' || t === 'light') d.setAttribute('data-theme-mode', t);
+            var s = parseInt(ls.getItem('reflect-text-size'), 10); if (s >= 80 && s <= 150) d.style.fontSize = s + '%';
+            if (ls.getItem('reflect-colorblind') === 'true') d.setAttribute('data-a11y-colorblind', 'true');
+            if (ls.getItem('reflect-sidebar') === 'collapsed') d.setAttribute('data-sidebar', 'collapsed');
+        } catch (e) { } })();
+    </script>
+    <link rel="stylesheet" href="~/assets/libs/bootstrap/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/assets/libs/remixicon/remixicon.css" />
+    <link rel="stylesheet" href="~/assets/libs/datatables/dataTables.bootstrap5.min.css" />
+    <link rel="stylesheet" href="~/assets/libs/datatables/responsive.bootstrap5.min.css" />
+    <link rel="stylesheet" href="~/assets/libs/toastr/toastr.min.css" />
+    <link rel="stylesheet" href="~/assets/libs/sweetalert2/sweetalert2.min.css" />
+    <link rel="stylesheet" href="~/standins/css/theme-standin.css" asp-append-version="true" />
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body>
+    <a class="visually-hidden-focusable position-absolute top-0 start-0 m-2 btn btn-primary" href="#mainContent">Skip to content</a>
+    <div class="standin-shell">
+        <aside class="standin-sidebar offcanvas-lg offcanvas-start" id="standinSidebar" tabindex="-1" aria-label="Main navigation">
+            <div class="d-flex align-items-center justify-content-between">
+                <a class="standin-brand flex-grow-1" href="/"><partial name="~/Standins/Views/_BrandMark.cshtml" /><span>Reflect XR</span></a>
+                <button type="button" class="btn-close btn-close-white d-lg-none me-3" data-bs-dismiss="offcanvas" data-bs-target="#standinSidebar" aria-label="Close menu"></button>
+            </div>
+            @if (menuItems.Count > 0)
+            {
+                <ul class="standin-menu">
+                    @foreach (var item in menuItems)
+                    {
+                        if (item.IsCategory)
+                        {
+                            <li class="standin-menu-category">@item.Label</li>
+                        }
+                        else
+                        {
+                            var active = StandinMenuProvider.IsActive(item, path);
+                            <li>
+                                <a href="@item.Url" class="@(active ? "active" : null)" aria-current="@(active ? "page" : null)" title="@item.Label">
+                                    <i class="@item.Icon" aria-hidden="true"></i><span class="standin-menu-label">@item.Label</span>
+                                </a>
+                            </li>
+                        }
+                    }
+                </ul>
+            }
+            <div class="standin-sidebar-foot">Demo build. Synthetic data only.</div>
+        </aside>
+
+        <div class="standin-main">
+            <header class="standin-header">
+                <button type="button" class="header-btn d-lg-none" data-bs-toggle="offcanvas" data-bs-target="#standinSidebar" aria-controls="standinSidebar" aria-label="Open menu"><i class="ri-menu-line" aria-hidden="true"></i></button>
+                <button type="button" class="header-btn d-none d-lg-inline-flex js-sidebar-collapse" aria-label="Collapse menu"><i class="ri-menu-fold-line" aria-hidden="true"></i></button>
+                <div class="flex-grow-1"></div>
+                @if (isProvider)
+                {
+                    <div class="dropdown" id="notifBell" data-count-url="@Url.Action("Count", "Notifications", new { area = "Provider" })"
+                         data-list-url="@Url.Action("List", "Notifications", new { area = "Provider" })" data-read-url="@Url.Action("MarkAllRead", "Notifications", new { area = "Provider" })">
+                        <button type="button" class="header-btn rpd-bell" data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false" aria-label="Notifications">
+                            <i class="ri-notification-3-line" aria-hidden="true"></i><span class="rpd-bell-badge d-none" aria-hidden="true"></span>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-end rpd-notif-menu">
+                            <div class="rpd-notif-head">
+                                <span class="fw-semibold">Notifications</span>
+                                <button type="button" class="btn btn-link btn-sm p-0 js-notif-read-all">Mark all as read</button>
+                            </div>
+                            <div class="js-notif-body"><div class="rpd-notif-empty">Loading...</div></div>
+                            <span class="visually-hidden js-notif-live" role="status" aria-live="polite"></span>
+                            <form class="d-none js-notif-token">@Html.AntiForgeryToken()</form>
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    <div class="dropdown">
+                        <button type="button" class="header-btn" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Notifications"><i class="ri-notification-3-line" aria-hidden="true"></i></button>
+                        <div class="dropdown-menu dropdown-menu-end p-3 rpd-notif-menu">
+                            <div class="fw-semibold mb-1">Notifications</div>
+                            <div class="text-muted fs-13">You're all caught up.</div>
+                        </div>
+                    </div>
+                }
+                <button type="button" class="header-btn js-theme-toggle" aria-label="Toggle light or dark mode"><i class="js-theme-icon ri-moon-line" aria-hidden="true"></i></button>
+                <button type="button" class="header-btn" data-bs-toggle="offcanvas" data-bs-target="#a11yPanel" aria-controls="a11yPanel" aria-label="Accessibility settings"><i class="ri-contrast-2-line" aria-hidden="true"></i></button>
+                <div class="dropdown">
+                    <button type="button" class="profile-btn" data-bs-toggle="dropdown" aria-expanded="false">
+                        <span class="avatar avatar-sm avatar-rounded">@initials</span>
+                        <span class="d-none d-md-inline fs-13 text-start lh-sm"><span class="d-block fw-semibold">@demoUser.DisplayName</span><span class="d-block text-muted fs-11">@(isProvider ? "Provider" : isFacilityAdmin ? "Facility Admin" : "End User")</span></span>
+                        <i class="ri-arrow-down-s-line" aria-hidden="true"></i>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-end">
+                        <div class="px-2 pt-1 pb-2"><div class="fw-semibold">@demoUser.DisplayName</div><div class="text-muted fs-12">@demoUser.Email</div></div>
+                        <form asp-area="" asp-controller="StandinAccount" asp-action="Logout" method="post" class="m-0">
+                            <button type="submit" class="dropdown-item d-flex align-items-center gap-2"><i class="ri-logout-box-r-line" aria-hidden="true"></i>Sign out</button>
+                        </form>
+                        <div class="dropdown-divider"></div>
+                        <h6 class="dropdown-header">Switch test user (demo only)</h6>
+                        @foreach (var u in DemoUsers.All)
+                        {
+                            <form asp-area="" asp-controller="StandinAccount" asp-action="SwitchUser" method="post" class="m-0">
+                                <input type="hidden" name="userKey" value="@u.EntraObjectId" />
+                                <button type="submit" class="dropdown-item d-flex align-items-start gap-2 @(u.UserId == demoUser.UserId ? "active" : null)">
+                                    <i class="@(u.UserId == demoUser.UserId ? "ri-checkbox-circle-line" : "ri-user-line") mt-1" aria-hidden="true"></i>
+                                    <span><span class="d-block">@u.DisplayName</span><span class="d-block fs-11 opacity-75">@u.Description</span></span>
+                                </button>
+                            </form>
+                        }
+                    </div>
+                </div>
+            </header>
+
+            <nav class="standin-breadcrumb" aria-label="Breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">@(isProvider ? "Provider" : isFacilityAdmin ? "Facility Admin" : "Reflect XR")</li>
+                    @if (ViewData["BreadcrumbParent"] is string parent)
+                    {
+                        <li class="breadcrumb-item"><a href="@ViewData["BreadcrumbParentUrl"]">@parent</a></li>
+                    }
+                    <li class="breadcrumb-item active" aria-current="page">@ViewData["Title"]</li>
+                </ol>
+            </nav>
+
+            <main id="mainContent" class="standin-content" tabindex="-1">
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="a11yPanel" aria-labelledby="a11yPanelLabel">
+        <div class="offcanvas-header border-bottom">
+            <h5 class="offcanvas-title" id="a11yPanelLabel">Accessibility</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            <fieldset class="mb-4">
+                <legend class="fs-14 fw-semibold">Theme</legend>
+                <div class="form-check"><input class="form-check-input" type="radio" name="a11yTheme" id="a11yThemeLight" value="light" /><label class="form-check-label" for="a11yThemeLight">Light</label></div>
+                <div class="form-check"><input class="form-check-input" type="radio" name="a11yTheme" id="a11yThemeDark" value="dark" /><label class="form-check-label" for="a11yThemeDark">Dark</label></div>
+            </fieldset>
+            <div class="form-check form-switch mb-4">
+                <input class="form-check-input" type="checkbox" role="switch" id="a11yColorblind" />
+                <label class="form-check-label" for="a11yColorblind">Color-blind friendly mode</label>
+            </div>
+            <label for="a11yTextSize" class="form-label fs-14 fw-semibold">Text size: <span id="a11yTextSizeValue">100%</span></label>
+            <input type="range" class="form-range" id="a11yTextSize" min="87.5" max="137.5" step="12.5" value="100" />
+            <button type="button" class="btn btn-outline-secondary w-100 mt-4 js-a11y-reset">Reset to defaults</button>
+        </div>
+    </div>
+
+    <div id="standinLoading" class="standin-loading" aria-hidden="true" role="status">
+        <div class="spinner-border" aria-hidden="true"></div><div class="standin-loading-text">Loading...</div>
+    </div>
+    <div id="standinTempDataToast" hidden data-message="@TempData["ToastMessage"]" data-type="@TempData["ToastType"]"></div>
+
+    <script src="~/assets/libs/jquery/jquery.min.js"></script>
+    <script src="~/assets/libs/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="~/assets/libs/datatables/jquery.dataTables.min.js"></script>
+    <script src="~/assets/libs/datatables/dataTables.bootstrap5.min.js"></script>
+    <script src="~/assets/libs/datatables/dataTables.responsive.min.js"></script>
+    <script src="~/assets/libs/datatables/responsive.bootstrap5.min.js"></script>
+    <script src="~/assets/libs/toastr/toastr.min.js"></script>
+    <script src="~/assets/libs/sweetalert2/sweetalert2.min.js"></script>
+    <script src="~/standins/js/standin-services.js" asp-append-version="true"></script>
+    <script src="~/standins/js/standin-layout.js" asp-append-version="true"></script>
+    @if (isProvider)
+    {
+        <script src="~/js/services/provider/notificationService.js" asp-append-version="true"></script>
+        <script src="~/js/shared/provider/notificationBell.js" asp-append-version="true"></script>
+    }
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

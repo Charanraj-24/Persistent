@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Reflect.Domain/Reflect.Domain.csproj" />
+    <Project Path="src/Reflect.Web/Reflect.Web.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Reflect.Domain.Tests/Reflect.Domain.Tests.csproj" />
+  </Folder>
+</Solution>
