@@ -19,13 +19,17 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>@ViewData["Title"] - Reflect XR</title>
+    <link rel="icon" type="image/png" href="~/images/brand/reflect-xr-mark.png" />
     <script nonce="@nonce">
-        (function () { try { var d = document.documentElement, ls = window.localStorage;
-            var t = ls.getItem('reflect-theme'); if (t === 'dark' || t === 'light') d.setAttribute('data-theme-mode', t);
-            var s = parseInt(ls.getItem('reflect-text-size'), 10); if (s >= 80 && s <= 150) d.style.fontSize = s + '%';
-            if (ls.getItem('reflect-colorblind') === 'true') d.setAttribute('data-a11y-colorblind', 'true');
-            if (ls.getItem('reflect-sidebar') === 'collapsed') d.setAttribute('data-sidebar', 'collapsed');
-        } catch (e) { } })();
+        (function () {
+            try {
+                var d = document.documentElement, ls = window.localStorage;
+                var t = ls.getItem('reflect-theme'); if (t === 'dark' || t === 'light') d.setAttribute('data-theme-mode', t);
+                var s = parseInt(ls.getItem('reflect-text-size'), 10); if (s >= 80 && s <= 150) d.style.fontSize = s + '%';
+                if (ls.getItem('reflect-colorblind') === 'true') d.setAttribute('data-a11y-colorblind', 'true');
+                if (ls.getItem('reflect-sidebar') === 'collapsed') d.setAttribute('data-sidebar', 'collapsed');
+            } catch (e) { }
+        })();
     </script>
     <link rel="stylesheet" href="~/assets/libs/bootstrap/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/assets/libs/remixicon/remixicon.css" />
